@@ -1,10 +1,11 @@
 #pragma once
 #define Debug true
-// Macros go here :)
-#define FB_VERSION "v0.6"
-#define FB_TARGET_TICKRATE 60
-#define FB_TICKRATE_TIME (1000 / FB_TARGET_TICKRATE)
-#define FB_DELTATIME (1.0 / FB_TARGET_TICKRATE)
+// NIP Engine Config
+#define NE_VERSION "v0.7"
+#define NE_TARGET_TICKRATE 60
+#define NE_TICKRATE_TIME (1000 / NE_TARGET_TICKRATE)
+#define NE_DELTATIME (1.0 / NE_TARGET_TICKRATE)
+// FB Config
 #define FB_CONTAINER_OUTPUT 100
 #define FB_CONTAINER_SIZE 0.03
 #define FB_IMAGE_SCALE 5
