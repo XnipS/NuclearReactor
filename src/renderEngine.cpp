@@ -109,7 +109,7 @@ void renderEngine::Update()
     ImGui::EndMainMenuBar();
 
     // Toolbox
-    ImGui::Begin("Toolbox", NULL,
+    /* ImGui::Begin("Toolbox", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
     ImGui::SliderFloat("Gravity (m/s/s)", &settings->gravity, 0, 10);
     ImGui::SliderInt("Collision Solver (-)", &settings->collisionCalcCount, 0,
@@ -122,30 +122,30 @@ void renderEngine::Update()
     ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
     ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
 
-    ImGui::End();
+    ImGui::End(); */
 
     // Sand Summoner
-    ImGui::Begin("Sand Summoner", NULL,
+    ImGui::Begin("Neutron Summoner", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
-    ImGui::InputDouble("Drag Coeff. (-)", &settings->dragCoefficient);
-    ImGui::InputDouble("Mass (kg)", &settings->mass);
-    ImGui::InputDouble("Radius (m)", &settings->radius);
+    // ImGui::InputDouble("Drag Coeff. (-)", &settings->dragCoefficient);
+    // ImGui::InputDouble("Mass (kg)", &settings->mass);
+    // ImGui::InputDouble("Radius (m)", &settings->radius);
     ImGui::Text("Total: %i", val_totalSand);
-    addSand = 0;
+    addNeutrons = 0;
     ImGui::SameLine();
     if (ImGui::Button("Add 1x")) {
-        addSand = 1;
+        addNeutrons = 1;
     }
     ImGui::SameLine();
     if (ImGui::Button("Add 10x")) {
-        addSand = 10;
+        addNeutrons = 10;
     }
     ImGui::SameLine();
     if (ImGui::Button("Add 100x")) {
-        addSand = 100;
+        addNeutrons = 100;
     }
     ImGui::SameLine();
-    clearAllSand = ImGui::Button("Clear");
+    clearAllNeutrons = ImGui::Button("Clear");
     ImGui::End();
 
     // Top left Overlay

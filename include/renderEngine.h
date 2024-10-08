@@ -86,15 +86,15 @@ public:
     bool Running() { return isRunning; };
     std::vector<std::string> currentDebugInfo;
     int val_totalSand;
-    int AddSand() { return addSand; };
-    bool ClearSand() { return clearAllSand; };
+    int AddNetron() { return addNeutrons; };
+    bool ClearNeutrons() { return clearAllNeutrons; };
 
 private:
     FluidEngineSettings* settings;
     int tick = 0;
     bool isRunning;
-    int addSand = 0;
-    bool clearAllSand = false;
+    int addNeutrons = 0;
+    bool clearAllNeutrons = false;
 };
 
 inline double RandomRange(double fMin, double fMax)

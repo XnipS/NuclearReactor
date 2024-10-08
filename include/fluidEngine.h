@@ -53,6 +53,7 @@ public:
     void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
     void AddNeutron(int x, int y);
     void DestroyNeutron(int id);
+    void ClearNeutrons();
     void LinkNeutronsToMain(std::vector<CircleData>* newPositions);
     // int SandCount() { return sand.size(); }
     FluidEngineSettings settings;

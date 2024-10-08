@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <vector>
 
@@ -43,36 +44,31 @@ void fluidEngine::Start(renderEngine* ren)
 void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
 
 // Do collision check on all particles
-/* void fluidEngine::CollisionUpdate(fluidParticle* particle)
+void fluidEngine::CollisionUpdate(neutron* particle)
 {
     VM::Vector2 collisionAxis(0, 0);
 
-    for (int j = 0; j < sand.size(); j++) {
+    for (int j = 0; j < reactorMaterial.size(); j++) {
         // if (*particle != sand[j]) {
         double dist;
-        VectorDistance(&particle->position, &sand[j].position, &dist);
-        const double min_dist = particle->radius + sand[j].radius;
+        VectorDistance(&particle->position, new VM::Vector2(reactorMaterial[j].position.x, reactorMaterial[j].position.y), &dist);
+        const double min_dist = 0.5;
         if (dist < min_dist) {
-            if (dist == 0) {
-                // printf("Zero distance\n");
-                //  distance = sand[i].radius + sand[j].radius;
+            if (reactorMaterial[j].canFission()) {
+                // Can fission
+                // std::cout << "Fission!" << std::endl;
+                reactorMaterial[j].element = 0;
+                DestroyNeutron(particle->id);
+                for (int i = 0; i < NR_FISSION_NEUTRONS; i++) {
+                    AddNeutron(reactorMaterial[j].position.x, reactorMaterial[j].position.y);
+                }
+            } else {
                 continue;
             }
-
-            VM::VectorSubtract(&collisionAxis, &sand[j].position,
-                &particle->position);
-
-            VM::VectorNormalise(&collisionAxis);
-            const double delta = (particle->radius + sand[j].radius) - dist;
-            VM::VectorScalarMultiply(&collisionAxis, &collisionAxis, 0.5f * delta);
-
-            VM::VectorSum(&sand[j].position, &sand[j].position, &collisionAxis);
-            VM::VectorSubtract(&particle->position, &particle->position,
-                &collisionAxis);
         }
     }
     //}
-} */
+}
 
 void fluidEngine::PositionUpdate(neutron* particle)
 {
@@ -121,6 +117,12 @@ void fluidEngine::ContainerUpdate(neutron* particle)
     if (escaped) {
         DestroyNeutron(particle->id);
     }
+};
+
+void fluidEngine::ClearNeutrons()
+{
+    neutrons.clear();
+    refreshNeutrons = true;
 };
 
 void fluidEngine::DestroyNeutron(int id)
@@ -174,6 +176,7 @@ void fluidEngine::Update()
         // for (int x = 0; x < settings.collisionCalcCount; x++) {
         //   CollisionUpdate(&neutrons[i]);
         //}
+        CollisionUpdate(&neutrons[i]);
         PositionUpdate(&neutrons[i]);
         ContainerUpdate(&neutrons[i]);
     }
@@ -192,7 +195,7 @@ void fluidEngine::LinkReactorMaterialToMain(
     std::vector<CircleData>* updatedParticles)
 {
     // Render sand
-    if (renderer->ClearSand()) {
+    if (renderer->ClearNeutrons()) {
         updatedParticles->clear();
     }
 
