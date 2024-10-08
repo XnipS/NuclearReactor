@@ -5,12 +5,9 @@
 #define NE_TARGET_TICKRATE 60
 #define NE_TICKRATE_TIME (1000 / NE_TARGET_TICKRATE)
 #define NE_DELTATIME (1.0 / NE_TARGET_TICKRATE)
-// FB Config
-#define FB_CONTAINER_OUTPUT 100
-#define FB_CONTAINER_SIZE 0.03
-#define FB_IMAGE_SCALE 5
-#define FB_IMAGE_SCALE_V2 5
-
-#define FB_MOLECULE_COUNT 1
-#define FB_MOLECULE_COL_BOUNDARY 1.000
-#define FB_MOLECULE_SPAWNRANDOM true
+// Nuclear Reactor Structure Config
+#define NR_SIZE_X 10
+#define NR_SIZE_Y 10
+// Reactor Renderer
+#define RR_SCALE 50
+#define RR_PADDING 10

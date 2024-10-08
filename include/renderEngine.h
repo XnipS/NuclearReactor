@@ -57,13 +57,15 @@ struct FluidEngineSettings {
     FluidEngineParticleStats particle;
 };
 
-struct CircleSettings {
+struct CircleData {
     VM::Vector2 position = VM::Vector2(0, 0);
     float radius = 1;
-    CircleSettings(VM::Vector2 pos, float rad)
+    int colourID = 0;
+    CircleData(VM::Vector2 pos, float rad, int colour = 0)
     {
         position = pos;
         radius = rad;
+        colourID = colour;
     };
 };
 
@@ -75,7 +77,7 @@ public:
     void Initialise(const char* title, int w, int h);
     void LinkSettings(FluidEngineSettings* set) { settings = set; };
     void UpdateImage(float* colours);
-    void LinkParticles(std::vector<CircleSettings>* newPos);
+    void LinkReactorMaterials(std::vector<CircleData>* newPos);
     void FloodImage(Colour3 col);
     void Update();
     void Render();

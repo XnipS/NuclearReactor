@@ -1,6 +1,7 @@
 #include <SDL.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <thread>
 
@@ -13,8 +14,13 @@ fluidEngine* fluid = nullptr;
 
 Uint32 frameStart;
 int currentTickTime;
-float pixels[FB_CONTAINER_OUTPUT * FB_CONTAINER_OUTPUT * 3];
-std::vector<CircleSettings> particles;
+std::vector<CircleData> reactorMaterial;
+
+double RandomRange(double fMin, double fMax)
+{
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
 
 // Entrypoint
 int main(int argc, char* args[])
@@ -28,19 +34,18 @@ int main(int argc, char* args[])
     fluid->Start(render);
     render->LinkSettings(&fluid->settings);
 
-    // Spawn initial random sand
-    if (FB_MOLECULE_SPAWNRANDOM) {
-        for (int i = 0; i < FB_MOLECULE_COUNT; i++) {
-            fluid->AddSandAtRnd();
-        }
-    } else {
-        for (int x = 0; x < FB_MOLECULE_COUNT; x++) {
-            for (int y = 0; y < FB_MOLECULE_COUNT; y++) {
-                fluid->AddSandAtPos(x, y);
+    // Spawn initial reactor material
+    for (int x = 0; x < NR_SIZE_X; x++) {
+        for (int y = 0; y < NR_SIZE_Y; y++) {
+            if (RandomRange(0, 1.0) > 0.5) {
+                fluid->AddReactorMaterial(x, y, 0);
+            } else {
+                fluid->AddReactorMaterial(x, y, 1);
             }
         }
     }
-    render->LinkParticles(&particles);
+
+    render->LinkReactorMaterials(&reactorMaterial);
 
     // Tick loop
     while (render->Running()) {
@@ -49,8 +54,8 @@ int main(int argc, char* args[])
 
         // Update & render
         std::thread fluidThread(&fluidEngine::Update, fluid);
-        fluid->LinkSandToMain(&particles);
-        render->val_totalSand = fluid->SandCount();
+        fluid->LinkReactorMaterialToMain(&reactorMaterial);
+        // render->val_totalSand = fluid->SandCount();
         render->Update();
         render->Render();
 

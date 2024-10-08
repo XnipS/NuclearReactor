@@ -27,11 +27,11 @@ SDL_Window* window;
 SDL_GLContext gl_context;
 ImGuiIO io;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-std::vector<CircleSettings>* sandRef;
+std::vector<CircleData>* reactorMaterialRef;
 
-void renderEngine::LinkParticles(std::vector<CircleSettings>* newPos)
+void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 {
-    sandRef = newPos;
+    reactorMaterialRef = newPos;
 }
 
 // Start engine
@@ -169,35 +169,35 @@ void renderEngine::Update()
     ImGui::Begin("Primary Renderer", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
     ImVec2 p = ImGui::GetCursorScreenPos();
-    static double max_size = FB_CONTAINER_OUTPUT * FB_IMAGE_SCALE_V2;
     ImGui::GetWindowDrawList()->AddRectFilled(
-        ImVec2(p.x, p.y), ImVec2(p.x + max_size, p.y + max_size),
+        ImVec2(p.x, p.y), ImVec2(p.x + (NR_SIZE_X * RR_SCALE), p.y + (NR_SIZE_Y * RR_SCALE)),
         IM_COL32(50, 50, 50, 255));
-    for (int i = 0; i < sandRef->size(); i++) {
-        if (i != 0) {
-            ImGui::GetWindowDrawList()->AddCircleFilled(
-                ImVec2(p.x + (*sandRef)[i].position.x,
-                    p.y + (*sandRef)[i].position.y),
-                (*sandRef)[i].radius, IM_COL32(255, 255, 255, 255), 0);
-        } else {
-            ImGui::GetWindowDrawList()->AddCircleFilled(
-                ImVec2(p.x + (*sandRef)[i].position.x,
-                    p.y + (*sandRef)[i].position.y),
-                (*sandRef)[i].radius, IM_COL32(255, 0, 0, 255), 0);
-        }
-    }
-    static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;
 
-    for (int i = 0; i < FB_CONTAINER_OUTPUT; i++) {
+    for (int i = 0; i < reactorMaterialRef->size(); i++) {
+        auto col = IM_COL32(0, 0, 0, 255);
+        if ((*reactorMaterialRef)[i].colourID == 0) {
+            col = IM_COL32(200, 200, 200, 255);
+        } else if ((*reactorMaterialRef)[i].colourID == 1) {
+            col = IM_COL32(100, 100, 255, 255);
+        }
+        ImGui::GetWindowDrawList()->AddCircleFilled(
+            ImVec2(p.x + (*reactorMaterialRef)[i].position.x,
+                p.y + (*reactorMaterialRef)[i].position.y),
+            (*reactorMaterialRef)[i].radius, col, 0);
+    }
+
+    // static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;
+
+    /* for (int i = 0; i < FB_CONTAINER_OUTPUT; i++) {
         if (!(i % (FB_CONTAINER_OUTPUT / settings->fluid_holes))) {
             ImGui::GetWindowDrawList()->AddRectFilled(
-                ImVec2(p.x + i * FB_IMAGE_SCALE_V2, p.y + max_size),
-                ImVec2((p.x + i * FB_IMAGE_SCALE_V2) + 5, p.y + max_size - 5),
+                ImVec2(p.x + i * RR_SCALE, p.y + max_size),
+                ImVec2((p.x + i * RR_SCALE) + 5, p.y + max_size - 5),
                 IM_COL32(0, 0, 255, 255));
         }
-    }
+    } */
 
-    ImGui::Dummy(ImVec2(max_size, max_size));
+    ImGui::Dummy(ImVec2((NR_SIZE_X * RR_SCALE), (NR_SIZE_Y * RR_SCALE)));
     ImGui::End();
 
     // Data Output

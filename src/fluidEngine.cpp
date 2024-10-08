@@ -14,24 +14,11 @@ fluidEngine::~fluidEngine() {};
 renderEngine* renderer;
 VM::Vector2 startingVelocity(0.0001, 0.0001);
 
-double RandomRange(double fMin, double fMax)
+// Spawn new reactor material
+void fluidEngine::AddReactorMaterial(int x, int y, int element)
 {
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
-
-// Spawn new particle
-void fluidEngine::AddSandAtPos(double x, double y)
-{
-    fluidParticle particle = *new fluidParticle(x, y, settings.mass, settings.radius);
-    sand.push_back(particle);
-};
-
-// Spawn new particle
-void fluidEngine::AddSandAtRnd()
-{
-    AddSandAtPos(RandomRange(0, FB_CONTAINER_SIZE),
-        RandomRange(0, FB_CONTAINER_SIZE));
+    atom mat = *new atom(x, y, element);
+    reactorMaterial.push_back(mat);
 };
 
 // Initialise fluid engine
@@ -45,7 +32,7 @@ void fluidEngine::Start(renderEngine* ren)
 void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
 
 // Do collision check on all particles
-void fluidEngine::CollisionUpdate(fluidParticle* particle)
+/* void fluidEngine::CollisionUpdate(fluidParticle* particle)
 {
     VM::Vector2 collisionAxis(0, 0);
 
@@ -74,56 +61,8 @@ void fluidEngine::CollisionUpdate(fluidParticle* particle)
         }
     }
     //}
-}
+} */
 
-void fluidEngine::GravityUpdate(fluidParticle* particle)
-{
-    double magnitude;
-    VM::Vector2 new_acc(0, 0);
-
-    // Gravity to bottom or centre
-    if (settings.useNormalGravity) {
-        new_acc.y = settings.gravity;
-    } else {
-        VM::Vector2 middle(FB_CONTAINER_SIZE / 2, FB_CONTAINER_SIZE / 2);
-        VM::VectorSubtract(&new_acc, &middle, &particle->position);
-        VM::VectorNormalise(&new_acc);
-        VM::VectorScalarMultiply(&new_acc, &new_acc, settings.gravity);
-    }
-
-    // Fluid
-    static double scale = (FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE;
-    if (((int)std::round(particle->position.x * scale) % (FB_CONTAINER_OUTPUT / settings.fluid_holes) == 0)) {
-        new_acc.y -= ((settings.fluid_power * settings.fluidDensity * particle->position.y) / particle->mass); // F = (rho * h * g) = ma
-    }
-
-    // Particle Drag
-    VM::Vector2 velocity(0, 0);
-    VM::VectorSubtract(&velocity, &particle->position, &particle->position_old);
-
-    VM::VectorMagnitude(&velocity, &magnitude);
-    VM::Vector2 drag_force(
-        0, 0.5 * particle->density() * particle->crossSectionalArea() * settings.dragCoefficient * (magnitude * magnitude));
-    VM::VectorScalarDivide(&drag_force, &drag_force, particle->mass);
-    VM::VectorSubtract(&particle->acceleration, &new_acc, &drag_force);
-};
-
-void fluidEngine::ContainerUpdate(fluidParticle* particle)
-{
-    // Keep/collide in/with container
-    // Horizontal
-    if (particle->position.x < 0 + particle->radius) {
-        particle->position.x = particle->radius;
-    } else if (particle->position.x > (FB_CONTAINER_SIZE - particle->radius)) {
-        particle->position.x = (FB_CONTAINER_SIZE - particle->radius);
-    }
-    // Vertical
-    if (particle->position.y < 0 + particle->radius) {
-        particle->position.y = particle->radius;
-    } else if (particle->position.y > (FB_CONTAINER_SIZE - particle->radius)) {
-        particle->position.y = (FB_CONTAINER_SIZE - particle->radius);
-    }
-};
 void fluidEngine::PositionUpdate(fluidParticle* particle)
 {
     VM::Vector2 velocity(0, 0);
@@ -154,87 +93,77 @@ void fluidEngine::PositionUpdate(fluidParticle* particle)
 // Fluid engine tick
 void fluidEngine::Update()
 {
-    // Add sand on tick
-    if (renderer->AddSand() != 0) {
-        for (int i = 0; i < renderer->AddSand(); i++) {
-            AddSandAtRnd();
-        }
-    }
-    // Remove sand on clear button
-    if (renderer->ClearSand()) {
-        sand.clear();
-    }
+
     // Calculate approximate total kinetic energy
-    float energy = 0;
-    for (int t = 0; t < sand.size(); t++) {
-        double magnitude;
-        VectorMagnitude(&sand[t].position_old, &magnitude);
-        energy += 0.5 * magnitude * magnitude;
-    }
-    if (renderer->currentDebugInfo.size() >= 2) {
-        std::ostringstream ss;
-        ss << "Current Energy: ";
-        ss << std::to_string(energy);
-        ss << " J";
-        renderer->currentDebugInfo[1] = ss.str();
+    /*     float energy = 0;
+        for (int t = 0; t < sand.size(); t++) {
+            double magnitude;
+            VectorMagnitude(&sand[t].position_old, &magnitude);
+            energy += 0.5 * magnitude * magnitude;
+        }
+        if (renderer->currentDebugInfo.size() >= 2) {
+            std::ostringstream ss;
+            ss << "Current Energy: ";
+            ss << std::to_string(energy);
+            ss << " J";
+            renderer->currentDebugInfo[1] = ss.str();
 
-        double starting;
-        VectorMagnitude(&startingVelocity, &starting);
+            double starting;
+            VectorMagnitude(&startingVelocity, &starting);
 
-        starting = (0.5 * starting * starting) * SandCount();
+            starting = (0.5 * starting * starting) * SandCount();
 
-        std::ostringstream sss;
-        sss << "Starting Energy: ";
-        sss << std::to_string(starting);
-        sss << " J";
-        renderer->currentDebugInfo[0] = sss.str();
+            std::ostringstream sss;
+            sss << "Starting Energy: ";
+            sss << std::to_string(starting);
+            sss << " J";
+            renderer->currentDebugInfo[0] = sss.str();
 
-    } else {
-        renderer->currentDebugInfo.push_back("INCOMING!");
-        renderer->currentDebugInfo.push_back("INCOMING!");
-    }
+        } else {
+            renderer->currentDebugInfo.push_back("INCOMING!");
+            renderer->currentDebugInfo.push_back("INCOMING!");
+        } */
 
     // Physics tick
-    for (int i = 0; i < sand.size(); i++) {
-        GravityUpdate(&sand[i]);
-        ContainerUpdate(&sand[i]);
-        // Physics steps
-        for (int x = 0; x < settings.collisionCalcCount; x++) {
-            CollisionUpdate(&sand[i]);
-        }
-        PositionUpdate(&sand[i]);
-    }
+    /*     for (int i = 0; i < sand.size(); i++) {
+            GravityUpdate(&sand[i]);
+            ContainerUpdate(&sand[i]);
+            // Physics steps
+            for (int x = 0; x < settings.collisionCalcCount; x++) {
+                CollisionUpdate(&sand[i]);
+            }
+            PositionUpdate(&sand[i]);
+        } */
 
     // Update current sand stats
-    ParticleStats p;
-    p.pos_x = sand[0].position.x;
-    p.pos_y = sand[0].position.y;
-    p.vel_x = sand[0].acceleration.x;
-    p.vel_y = sand[0].acceleration.y;
-    settings.particle.AddParticle(&p);
+    /*     ParticleStats p;
+        p.pos_x = sand[0].position.x;
+        p.pos_y = sand[0].position.y;
+        p.vel_x = sand[0].acceleration.x;
+        p.vel_y = sand[0].acceleration.y;
+        settings.particle.AddParticle(&p); */
 }
 
 // Encode sand data to colour data
-void fluidEngine::LinkSandToMain(
-    std::vector<CircleSettings>* updatedParticles)
+void fluidEngine::LinkReactorMaterialToMain(
+    std::vector<CircleData>* updatedParticles)
 {
     // Render sand
     if (renderer->ClearSand()) {
         updatedParticles->clear();
     }
 
-    static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;
-
-    for (int i = 0; i < sand.size(); i++) {
+    for (int i = 0; i < reactorMaterial.size(); i++) {
         // Rounding
-        VM::Vector2 temp = sand[i].position;
-        VM::VectorScalarMultiply(&temp, &temp, scale);
-        CircleSettings circle(temp, sand[i].radius * scale);
+        VM::Vector2 temp = *new VM::Vector2((reactorMaterial[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorMaterial[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        // VM::VectorScalarMultiply(&temp, &temp, scale);
+        CircleData circle(temp, (1 * RR_SCALE / 2) - RR_PADDING, reactorMaterial[i].element);
         if (updatedParticles->size() <= i) {
             updatedParticles->push_back(circle);
         } else {
             (*updatedParticles)[i].position = temp;
-            (*updatedParticles)[i].radius = sand[i].radius * scale;
+            (*updatedParticles)[i].radius = (1 * RR_SCALE / 2) - RR_PADDING;
+            (*updatedParticles)[i].colourID = reactorMaterial[i].element;
         }
     }
 }

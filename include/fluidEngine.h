@@ -31,24 +31,42 @@ public:
     }
 };
 
+class atom {
+public:
+    VM::Vector2Int position = *new VM::Vector2Int(0, 0);
+    int element = 0; // 0 = Inert, 1 = U-235
+    atom(int x, int y, int e)
+    {
+        position = *new VM::Vector2Int(x, y);
+        element = e;
+    }
+    bool canFission()
+    {
+        if (element == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+};
+
 class fluidEngine {
 public:
     fluidEngine();
     ~fluidEngine();
     void Start(renderEngine* ren);
     void Update();
-    void AddSandAtRnd();
-    void AddSandAtPos(double x, double y);
-    void LinkSandToMain(std::vector<CircleSettings>* newPositions);
-    int SandCount() { return sand.size(); }
+    void AddReactorMaterial(int x, int y, int element);
+    void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
+    // int SandCount() { return sand.size(); }
     FluidEngineSettings settings;
 
 private:
-    void GravityUpdate(fluidParticle* particle);
+    // void GravityUpdate(fluidParticle* particle);
     void CollisionUpdate(fluidParticle* particle);
-    void ContainerUpdate(fluidParticle* particle);
+    // void ContainerUpdate(fluidParticle* particle);
     void PositionUpdate(fluidParticle* particle);
 
     void Reflect(double* input);
-    std::vector<fluidParticle> sand;
+    std::vector<atom> reactorMaterial;
 };
