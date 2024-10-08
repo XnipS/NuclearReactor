@@ -10,24 +10,17 @@
 
 #include "renderEngine.h"
 
-class fluidParticle {
+class neutron {
 public:
     VM::Vector2 position = *new VM::Vector2(0, 0);
     VM::Vector2 position_old = *new VM::Vector2(0, 0);
     VM::Vector2 acceleration = *new VM::Vector2(0, 0);
-    float mass = 0.02; // kg
-    float radius = 0.0003; // m
-    fluidParticle(double x, double y, double m, double r)
+    int id;
+    neutron(double x, double y, int newid)
     {
         position = *new VM::Vector2(x, y);
         position_old = *new VM::Vector2(x, y);
-        mass = m;
-        radius = r;
-    }
-    double crossSectionalArea() { return M_PI * radius * radius; } // m**2
-    double density()
-    {
-        return mass / ((4.0 / 3.0) * M_PI * radius * radius * radius); // kg/m**3
+        id = newid;
     }
 };
 
@@ -58,15 +51,19 @@ public:
     void Update();
     void AddReactorMaterial(int x, int y, int element);
     void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
+    void AddNeutron(int x, int y);
+    void DestroyNeutron(int id);
+    void LinkNeutronsToMain(std::vector<CircleData>* newPositions);
     // int SandCount() { return sand.size(); }
     FluidEngineSettings settings;
 
 private:
     // void GravityUpdate(fluidParticle* particle);
-    void CollisionUpdate(fluidParticle* particle);
-    // void ContainerUpdate(fluidParticle* particle);
-    void PositionUpdate(fluidParticle* particle);
+    void CollisionUpdate(neutron* particle);
+    void ContainerUpdate(neutron* particle);
+    void PositionUpdate(neutron* particle);
 
     void Reflect(double* input);
     std::vector<atom> reactorMaterial;
+    std::vector<neutron> neutrons;
 };

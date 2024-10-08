@@ -28,10 +28,15 @@ SDL_GLContext gl_context;
 ImGuiIO io;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 std::vector<CircleData>* reactorMaterialRef;
+std::vector<CircleData>* neturonRef;
 
 void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 {
     reactorMaterialRef = newPos;
+}
+void renderEngine::LinkNeutrons(std::vector<CircleData>* newPos)
+{
+    neturonRef = newPos;
 }
 
 // Start engine
@@ -171,7 +176,7 @@ void renderEngine::Update()
     ImVec2 p = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddRectFilled(
         ImVec2(p.x, p.y), ImVec2(p.x + (NR_SIZE_X * RR_SCALE), p.y + (NR_SIZE_Y * RR_SCALE)),
-        IM_COL32(50, 50, 50, 255));
+        IM_COL32(255, 255, 255, 255));
 
     for (int i = 0; i < reactorMaterialRef->size(); i++) {
         auto col = IM_COL32(0, 0, 0, 255);
@@ -184,6 +189,13 @@ void renderEngine::Update()
             ImVec2(p.x + (*reactorMaterialRef)[i].position.x,
                 p.y + (*reactorMaterialRef)[i].position.y),
             (*reactorMaterialRef)[i].radius, col, 0);
+    }
+    for (int i = 0; i < neturonRef->size(); i++) {
+        auto col = IM_COL32(50, 50, 50, 255);
+        ImGui::GetWindowDrawList()->AddCircleFilled(
+            ImVec2(p.x + (*neturonRef)[i].position.x,
+                p.y + (*neturonRef)[i].position.y),
+            (*neturonRef)[i].radius, col, 0);
     }
 
     // static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;

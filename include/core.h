@@ -8,6 +8,7 @@
 // Nuclear Reactor Structure Config
 #define NR_SIZE_X 10
 #define NR_SIZE_Y 10
+#define NR_NEUTRON_KE 100
 // Reactor Renderer
 #define RR_SCALE 50
 #define RR_PADDING 10

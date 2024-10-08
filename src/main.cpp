@@ -15,12 +15,9 @@ fluidEngine* fluid = nullptr;
 Uint32 frameStart;
 int currentTickTime;
 std::vector<CircleData> reactorMaterial;
+std::vector<CircleData> neutrons;
 
-double RandomRange(double fMin, double fMax)
-{
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
+
 
 // Entrypoint
 int main(int argc, char* args[])
@@ -37,15 +34,17 @@ int main(int argc, char* args[])
     // Spawn initial reactor material
     for (int x = 0; x < NR_SIZE_X; x++) {
         for (int y = 0; y < NR_SIZE_Y; y++) {
-            if (RandomRange(0, 1.0) > 0.5) {
+            if (RandomRange(0, 1.0) > 0.1) {
                 fluid->AddReactorMaterial(x, y, 0);
             } else {
                 fluid->AddReactorMaterial(x, y, 1);
+                fluid->AddNeutron(x, y);
             }
         }
     }
 
     render->LinkReactorMaterials(&reactorMaterial);
+    render->LinkNeutrons(&neutrons);
 
     // Tick loop
     while (render->Running()) {
@@ -55,6 +54,7 @@ int main(int argc, char* args[])
         // Update & render
         std::thread fluidThread(&fluidEngine::Update, fluid);
         fluid->LinkReactorMaterialToMain(&reactorMaterial);
+        fluid->LinkNeutronsToMain(&neutrons);
         // render->val_totalSand = fluid->SandCount();
         render->Update();
         render->Render();

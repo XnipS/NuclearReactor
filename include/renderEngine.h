@@ -78,6 +78,7 @@ public:
     void LinkSettings(FluidEngineSettings* set) { settings = set; };
     void UpdateImage(float* colours);
     void LinkReactorMaterials(std::vector<CircleData>* newPos);
+    void LinkNeutrons(std::vector<CircleData>* newPos);
     void FloodImage(Colour3 col);
     void Update();
     void Render();
@@ -94,4 +95,10 @@ private:
     bool isRunning;
     int addSand = 0;
     bool clearAllSand = false;
+};
+
+inline double RandomRange(double fMin, double fMax)
+{
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
 };

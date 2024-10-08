@@ -2,7 +2,9 @@
 
 #include <cmath>
 #include <cstdio>
+#include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "../include/core.h"
 #include "../include/renderEngine.h"
@@ -13,12 +15,21 @@ fluidEngine::~fluidEngine() {};
 
 renderEngine* renderer;
 VM::Vector2 startingVelocity(0.0001, 0.0001);
+bool refreshNeutrons = false;
 
 // Spawn new reactor material
 void fluidEngine::AddReactorMaterial(int x, int y, int element)
 {
     atom mat = *new atom(x, y, element);
     reactorMaterial.push_back(mat);
+};
+
+// Spawn new neutron
+void fluidEngine::AddNeutron(int x, int y)
+{
+    neutron mat = *new neutron(x, y, neutrons.size());
+    mat.acceleration = *new VM::Vector2(RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE), RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE));
+    neutrons.push_back(mat);
 };
 
 // Initialise fluid engine
@@ -63,7 +74,7 @@ void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
     //}
 } */
 
-void fluidEngine::PositionUpdate(fluidParticle* particle)
+void fluidEngine::PositionUpdate(neutron* particle)
 {
     VM::Vector2 velocity(0, 0);
     VM::VectorSubtract(&velocity, &particle->position,
@@ -88,6 +99,38 @@ void fluidEngine::PositionUpdate(fluidParticle* particle)
     // VM::VectorSum(&particle->position, &particle->position, &velocity);
 
     // particle->acceleration = VM::Vector2(0, 0);
+};
+
+void fluidEngine::ContainerUpdate(neutron* particle)
+{
+    bool escaped = false;
+    float alter = 0.5;
+    if (particle->position.x + alter < 0) {
+        escaped = true;
+    }
+    if (particle->position.x + alter > NR_SIZE_X) {
+        escaped = true;
+    }
+    if (particle->position.y + alter < 0) {
+        escaped = true;
+    }
+    if (particle->position.y + alter > NR_SIZE_Y) {
+        escaped = true;
+    }
+
+    if (escaped) {
+        DestroyNeutron(particle->id);
+    }
+};
+
+void fluidEngine::DestroyNeutron(int id)
+{
+    for (int i = 0; i < neutrons.size(); i++) {
+        if (neutrons[i].id == id) {
+            neutrons.erase(neutrons.begin() + i);
+        }
+    }
+    refreshNeutrons = true;
 };
 
 // Fluid engine tick
@@ -125,15 +168,15 @@ void fluidEngine::Update()
         } */
 
     // Physics tick
-    /*     for (int i = 0; i < sand.size(); i++) {
-            GravityUpdate(&sand[i]);
-            ContainerUpdate(&sand[i]);
-            // Physics steps
-            for (int x = 0; x < settings.collisionCalcCount; x++) {
-                CollisionUpdate(&sand[i]);
-            }
-            PositionUpdate(&sand[i]);
-        } */
+    for (int i = 0; i < neutrons.size(); i++) {
+        // GravityUpdate(&neutrons[i]);
+        // Physics steps
+        // for (int x = 0; x < settings.collisionCalcCount; x++) {
+        //   CollisionUpdate(&neutrons[i]);
+        //}
+        PositionUpdate(&neutrons[i]);
+        ContainerUpdate(&neutrons[i]);
+    }
 
     // Update current sand stats
     /*     ParticleStats p;
@@ -144,7 +187,7 @@ void fluidEngine::Update()
         settings.particle.AddParticle(&p); */
 }
 
-// Encode sand data to colour data
+// Encode reactor data to render data
 void fluidEngine::LinkReactorMaterialToMain(
     std::vector<CircleData>* updatedParticles)
 {
@@ -157,13 +200,39 @@ void fluidEngine::LinkReactorMaterialToMain(
         // Rounding
         VM::Vector2 temp = *new VM::Vector2((reactorMaterial[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorMaterial[i].position.y * RR_SCALE) + RR_SCALE / 2);
         // VM::VectorScalarMultiply(&temp, &temp, scale);
-        CircleData circle(temp, (1 * RR_SCALE / 2) - RR_PADDING, reactorMaterial[i].element);
+        CircleData circle(temp, (RR_SCALE / 2) - RR_PADDING, reactorMaterial[i].element);
         if (updatedParticles->size() <= i) {
             updatedParticles->push_back(circle);
         } else {
             (*updatedParticles)[i].position = temp;
-            (*updatedParticles)[i].radius = (1 * RR_SCALE / 2) - RR_PADDING;
+            (*updatedParticles)[i].radius = (RR_SCALE / 2) - RR_PADDING;
             (*updatedParticles)[i].colourID = reactorMaterial[i].element;
+        }
+    }
+}
+
+// Encode neutron data to render data
+void fluidEngine::LinkNeutronsToMain(
+    std::vector<CircleData>* updatedParticles)
+{
+
+    // Render sand
+    if (refreshNeutrons) {
+        updatedParticles->clear();
+        refreshNeutrons = false;
+    }
+
+    for (int i = 0; i < neutrons.size(); i++) {
+        // Rounding
+        VM::Vector2 temp = *new VM::Vector2((neutrons[i].position.x * RR_SCALE) + RR_SCALE / 2, (neutrons[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        // VM::VectorScalarMultiply(&temp, &temp, scale);
+        CircleData circle(temp, (RR_SCALE / 3) - RR_PADDING, -1);
+        if (updatedParticles->size() <= i) {
+            updatedParticles->push_back(circle);
+        } else {
+            (*updatedParticles)[i].position = temp;
+            (*updatedParticles)[i].radius = (RR_SCALE / 3) - RR_PADDING;
+            (*updatedParticles)[i].colourID = -1;
         }
     }
 }
