@@ -101,28 +101,31 @@ void renderEngine::Update()
     ImGui::Separator();
     ImGui::Text(NE_VERSION);
     ImGui::Separator();
-    if (ImGui::BeginMenu("Options")) {
-        ImGui::Checkbox("Use normal gravity", &settings->useNormalGravity);
-        ImGui::EndMenu();
-    }
+    /*     if (ImGui::BeginMenu("Options")) {
+            ImGui::Checkbox("Use normal gravity", &settings->useNormalGravity);
+            ImGui::EndMenu();
+        } */
     ImGui::Separator();
     ImGui::EndMainMenuBar();
 
     // Toolbox
-    /* ImGui::Begin("Toolbox", NULL,
+    ImGui::Begin("Toolbox", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
-    ImGui::SliderFloat("Gravity (m/s/s)", &settings->gravity, 0, 10);
-    ImGui::SliderInt("Collision Solver (-)", &settings->collisionCalcCount, 0,
-        20);
+    // ImGui::SliderFloat("Gravity (m/s/s)", &settings->gravity, 0, 10);
+    // ImGui::SliderInt("Collision Solver (-)", &settings->collisionCalcCount, 0,
+    //     20);
     // ImGui::BeginDisabled(true);
     // ImGui::SliderFloat("Dampen (%)", &settings->dampen, 0, 1);
     // ImGui::SliderFloat("Heat", &settings->heat, 0, 1);
     // ImGui::EndDisabled();
-    ImGui::SliderInt("Fluid Holes", &settings->fluid_holes, 1, 51);
-    ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
-    ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
+    ImGui::SliderInt("Fission Neutron Count", &settings->fissionNeutronCount, 1, 5);
+    ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
+    ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
+    ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
+    // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
+    // ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
 
-    ImGui::End(); */
+    ImGui::End();
 
     // Sand Summoner
     ImGui::Begin("Neutron Summoner", NULL,

@@ -8,8 +8,7 @@
 // Nuclear Reactor Structure Config
 #define NR_SIZE_X 20
 #define NR_SIZE_Y 20
-#define NR_NEUTRON_KE 200
-#define NR_FISSION_NEUTRONS 3
+#define NR_ENRICHMENT 0.1
 // Reactor Renderer
 #define RR_SCALE 30
 #define RR_PADDING 3

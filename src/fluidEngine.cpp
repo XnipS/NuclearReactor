@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <new>
 #include <ostream>
 #include <sstream>
 #include <vector>
@@ -17,6 +18,7 @@ fluidEngine::~fluidEngine() {};
 renderEngine* renderer;
 VM::Vector2 startingVelocity(0.0001, 0.0001);
 bool refreshNeutrons = false;
+int neutronCurrentID = 0;
 
 // Spawn new reactor material
 void fluidEngine::AddReactorMaterial(int x, int y, int element)
@@ -28,8 +30,11 @@ void fluidEngine::AddReactorMaterial(int x, int y, int element)
 // Spawn new neutron
 void fluidEngine::AddNeutron(int x, int y)
 {
-    neutron mat = *new neutron(x, y, neutrons.size());
-    mat.acceleration = *new VM::Vector2(RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE), RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE));
+    neutron mat = *new neutron(x, y, neutronCurrentID);
+    neutronCurrentID++;
+    // mat.acceleration = *new VM::Vector2(RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE), RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE));
+    VM::Vector2 acc = RandomUnitVector();
+    mat.acceleration = *new VM::Vector2(acc.x * settings.fissionNeutronSpeed, acc.y * settings.fissionNeutronSpeed);
     neutrons.push_back(mat);
 };
 
@@ -41,7 +46,7 @@ void fluidEngine::Start(renderEngine* ren)
 };
 
 // Keep/collide in/with container
-void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
+// void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
 
 // Do collision check on all particles
 void fluidEngine::CollisionUpdate(neutron* particle)
@@ -59,9 +64,10 @@ void fluidEngine::CollisionUpdate(neutron* particle)
                 // std::cout << "Fission!" << std::endl;
                 reactorMaterial[j].element = 0;
                 DestroyNeutron(particle->id);
-                for (int i = 0; i < NR_FISSION_NEUTRONS; i++) {
+                for (int i = 0; i < settings.fissionNeutronCount; i++) {
                     AddNeutron(reactorMaterial[j].position.x, reactorMaterial[j].position.y);
                 }
+                break;
             } else {
                 continue;
             }
@@ -97,6 +103,26 @@ void fluidEngine::PositionUpdate(neutron* particle)
     // particle->acceleration = VM::Vector2(0, 0);
 };
 
+void fluidEngine::DecayUpdate(atom* particle)
+{
+    if (!particle->canFission()) {
+        // Inert -> Release radiation
+        if (RandomRange(0.0, 1.0) < settings.decayChance * NE_DELTATIME) {
+            AddNeutron(particle->position.x, particle->position.y);
+        }
+    }
+};
+
+void fluidEngine::RegenUpdate(atom* particle)
+{
+    if (!particle->canFission()) {
+        // Inert -> Re-enrich
+        if (RandomRange(0.0, 1.0) < settings.regenerateChance * NE_DELTATIME) {
+            particle->element = 1;
+        }
+    }
+};
+
 void fluidEngine::ContainerUpdate(neutron* particle)
 {
     bool escaped = false;
@@ -130,6 +156,7 @@ void fluidEngine::DestroyNeutron(int id)
     for (int i = 0; i < neutrons.size(); i++) {
         if (neutrons[i].id == id) {
             neutrons.erase(neutrons.begin() + i);
+            break;
         }
     }
     refreshNeutrons = true;
@@ -171,14 +198,13 @@ void fluidEngine::Update()
 
     // Physics tick
     for (int i = 0; i < neutrons.size(); i++) {
-        // GravityUpdate(&neutrons[i]);
-        // Physics steps
-        // for (int x = 0; x < settings.collisionCalcCount; x++) {
-        //   CollisionUpdate(&neutrons[i]);
-        //}
         CollisionUpdate(&neutrons[i]);
         PositionUpdate(&neutrons[i]);
         ContainerUpdate(&neutrons[i]);
+    }
+    for (int i = 0; i < reactorMaterial.size(); i++) {
+        DecayUpdate(&reactorMaterial[i]);
+        RegenUpdate(&reactorMaterial[i]);
     }
 
     // Update current sand stats

@@ -56,13 +56,16 @@ public:
     void ClearNeutrons();
     void LinkNeutronsToMain(std::vector<CircleData>* newPositions);
     // int SandCount() { return sand.size(); }
-    FluidEngineSettings settings;
+    ReactorSettings settings;
 
 private:
-    // void GravityUpdate(fluidParticle* particle);
+    // Neutron Updates
     void CollisionUpdate(neutron* particle);
     void ContainerUpdate(neutron* particle);
     void PositionUpdate(neutron* particle);
+    // Atom (Reactor Material) Updates
+    void DecayUpdate(atom* particle);
+    void RegenUpdate(atom* particle);
 
     void Reflect(double* input);
     std::vector<atom> reactorMaterial;

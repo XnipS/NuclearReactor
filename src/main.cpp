@@ -32,13 +32,13 @@ int main(int argc, char* args[])
     // Spawn initial reactor material
     for (int x = 0; x < NR_SIZE_X; x++) {
         for (int y = 0; y < NR_SIZE_Y; y++) {
-            /* if (RandomRange(0, 1.0) > 0.1) {
-                fluid->AddReactorMaterial(x, y, 0);
-            } else {
+            if (RandomRange(0, 1.0) < NR_ENRICHMENT) {
                 fluid->AddReactorMaterial(x, y, 1);
+            } else {
+                fluid->AddReactorMaterial(x, y, 0);
                 // fluid->AddNeutron(x, y);
-            } */
-            fluid->AddReactorMaterial(x, y, 1);
+            }
+            // fluid->AddReactorMaterial(x, y, 1);
         }
     }
 

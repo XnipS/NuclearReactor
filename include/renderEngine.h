@@ -25,36 +25,11 @@ struct ParticleStats {
     double vel_y;
 };
 
-class FluidEngineParticleStats {
-private:
-    std::vector<ParticleStats> m_stats;
-    int m_max = 10;
-
-public:
-    std::vector<ParticleStats> GetStats() const { return m_stats; }
-    int GetMax() const { return m_max; }
-    inline void AddParticle(ParticleStats* stat)
-    {
-        m_stats.push_back(*stat);
-        if (m_stats.size() > m_max) {
-            m_stats.erase(m_stats.begin());
-        }
-    };
-};
-
-struct FluidEngineSettings {
-    float gravity = 0.5;
-    float dampen = 0.5;
-    float heat = 0;
-    int fluid_holes = 20;
-    float fluid_power = 1;
-    double mass = 0.02;
-    double radius = 0.0003;
-    double dragCoefficient = 0.47;
-    int collisionCalcCount = 10;
-    bool useNormalGravity = true;
-    double fluidDensity = 1.204;
-    FluidEngineParticleStats particle;
+struct ReactorSettings {
+    int fissionNeutronCount = 3;
+    float fissionNeutronSpeed = 200;
+    float decayChance = 0.001;
+    float regenerateChance = 0.001;
 };
 
 struct CircleData {
@@ -75,7 +50,7 @@ public:
     ~renderEngine();
 
     void Initialise(const char* title, int w, int h);
-    void LinkSettings(FluidEngineSettings* set) { settings = set; };
+    void LinkSettings(ReactorSettings* set) { settings = set; };
     void UpdateImage(float* colours);
     void LinkReactorMaterials(std::vector<CircleData>* newPos);
     void LinkNeutrons(std::vector<CircleData>* newPos);
@@ -90,7 +65,7 @@ public:
     bool ClearNeutrons() { return clearAllNeutrons; };
 
 private:
-    FluidEngineSettings* settings;
+    ReactorSettings* settings;
     int tick = 0;
     bool isRunning;
     int addNeutrons = 0;
@@ -101,4 +76,11 @@ inline double RandomRange(double fMin, double fMax)
 {
     double f = (double)rand() / RAND_MAX;
     return fMin + f * (fMax - fMin);
+};
+
+inline VM::Vector2 RandomUnitVector()
+{
+    double theta = RandomRange(0, 2 * M_PI);
+
+    return *new VM::Vector2(cos(theta), sin(theta));
 };
