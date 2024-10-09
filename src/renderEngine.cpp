@@ -128,6 +128,7 @@ void renderEngine::Update()
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
     ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
     ImGui::SliderFloat("Neutron Absorption Chance", &settings->waterAbsorptionChance, 0, 0.5);
+    ImGui::SliderFloat("Xenon Decay Chance", &settings->xenonDecayChance, 0, 0.5);
     ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
     // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
@@ -207,6 +208,8 @@ void renderEngine::Update()
             col = IM_COL32(200, 200, 200, 255);
         } else if ((*reactorMaterialRef)[i].colourID == 1) {
             col = IM_COL32(100, 200, 100, 255);
+        } else if ((*reactorMaterialRef)[i].colourID == 2) {
+            col = IM_COL32(50, 50, 50, 255);
         }
         ImGui::GetWindowDrawList()->AddCircleFilled(
             ImVec2(p.x + (*reactorMaterialRef)[i].position.x,

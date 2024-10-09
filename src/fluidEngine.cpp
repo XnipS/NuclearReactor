@@ -64,14 +64,19 @@ void fluidEngine::CollisionUpdate(neutron* particle)
         VectorDistance(&particle->position, new VM::Vector2(reactorMaterial[j].position.x, reactorMaterial[j].position.y), &dist);
         const double min_dist = 0.5;
         if (dist < min_dist) {
-            if (reactorMaterial[j].canFission()) {
-                // Can fission
-                // std::cout << "Fission!" << std::endl;
+            if (reactorMaterial[j].element == 1) {
+                // Is U-235 -> Can Fission!
                 reactorMaterial[j].element = 0;
                 DestroyNeutron(particle->id);
                 for (int i = 0; i < settings.fissionNeutronCount; i++) {
                     AddNeutron(reactorMaterial[j].position.x, reactorMaterial[j].position.y);
                 }
+                break;
+            } else if (reactorMaterial[j].element == 2) {
+                // Is Xe-135 -> Can Stabilise!
+
+                reactorMaterial[j].element = 0;
+                DestroyNeutron(particle->id);
                 break;
             } else {
                 continue;
@@ -99,17 +104,21 @@ void fluidEngine::PositionUpdate(neutron* particle)
 
 void fluidEngine::DecayUpdate(atom* particle)
 {
-    if (!particle->canFission()) {
+    if (particle->element == 0) {
         // Inert -> Release radiation
         if (RandomRange(0.0, 1.0) < settings.decayChance * NE_DELTATIME) {
             AddNeutron(particle->position.x, particle->position.y);
+        }
+        // Inert -> Can decay to Xenon
+        if (RandomRange(0.0, 1.0) < settings.xenonDecayChance * NE_DELTATIME) {
+            particle->element = 2;
         }
     }
 };
 
 void fluidEngine::RegenUpdate(atom* particle)
 {
-    if (!particle->canFission()) {
+    if (particle->element == 0) {
         // Inert -> Re-enrich
         if (RandomRange(0.0, 1.0) < settings.regenerateChance * NE_DELTATIME) {
             particle->element = 1;

@@ -30,6 +30,7 @@ struct ReactorSettings {
     float fissionNeutronSpeed = 200;
     float decayChance = 0.001;
     float regenerateChance = 0.001;
+    float xenonDecayChance = 0.001;
     float heatDissipate = 10;
     float heatTransfer = 10;
     float waterAbsorptionChance = 0.001;
