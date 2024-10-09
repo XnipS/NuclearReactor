@@ -27,6 +27,13 @@ void fluidEngine::AddReactorMaterial(int x, int y, int element)
     reactorMaterial.push_back(mat);
 };
 
+// Spawn new water
+void fluidEngine::AddWater(int x, int y)
+{
+    water mat = *new water(x, y);
+    reactorWater.push_back(mat);
+};
+
 // Spawn new neutron
 void fluidEngine::AddNeutron(int x, int y)
 {
@@ -51,8 +58,6 @@ void fluidEngine::Start(renderEngine* ren)
 // Do collision check on all particles
 void fluidEngine::CollisionUpdate(neutron* particle)
 {
-    VM::Vector2 collisionAxis(0, 0);
-
     for (int j = 0; j < reactorMaterial.size(); j++) {
         // if (*particle != sand[j]) {
         double dist;
@@ -73,7 +78,6 @@ void fluidEngine::CollisionUpdate(neutron* particle)
             }
         }
     }
-    //}
 }
 
 void fluidEngine::PositionUpdate(neutron* particle)
@@ -91,16 +95,6 @@ void fluidEngine::PositionUpdate(neutron* particle)
 
     VM::VectorSum(&particle->position, &particle->position,
         &velocity); // x = x0 + v
-
-    // VM::VectorScalarMultiply(&particle->acceleration,
-    // &particle->acceleration,
-    //                          FB_DELTATIME * FB_DELTATIME);
-
-    // VM::VectorSum(&velocity, &velocity, &particle->acceleration);
-
-    // VM::VectorSum(&particle->position, &particle->position, &velocity);
-
-    // particle->acceleration = VM::Vector2(0, 0);
 };
 
 void fluidEngine::DecayUpdate(atom* particle)
@@ -119,6 +113,25 @@ void fluidEngine::RegenUpdate(atom* particle)
         // Inert -> Re-enrich
         if (RandomRange(0.0, 1.0) < settings.regenerateChance * NE_DELTATIME) {
             particle->element = 1;
+        }
+    }
+};
+
+void fluidEngine::HeatTransferUpdate(water* particle)
+{
+    if (particle->temperature > 0) {
+        particle->temperature -= settings.heatDissipate * NE_DELTATIME;
+    } else {
+        particle->temperature = 0;
+    }
+    for (int j = 0; j < neutrons.size(); j++) {
+        double dist;
+        VectorDistance(new VM::Vector2(particle->position.x, particle->position.y), &neutrons[j].position, &dist);
+
+        if (dist < NR_WATER_RANGE) {
+            particle->temperature += settings.heatTransfer * NE_DELTATIME;
+        } else {
+            continue;
         }
     }
 };
@@ -206,6 +219,9 @@ void fluidEngine::Update()
         DecayUpdate(&reactorMaterial[i]);
         RegenUpdate(&reactorMaterial[i]);
     }
+    for (int i = 0; i < reactorWater.size(); i++) {
+        HeatTransferUpdate(&reactorWater[i]);
+    }
 
     // Update current sand stats
     /*     ParticleStats p;
@@ -229,12 +245,12 @@ void fluidEngine::LinkReactorMaterialToMain(
         // Rounding
         VM::Vector2 temp = *new VM::Vector2((reactorMaterial[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorMaterial[i].position.y * RR_SCALE) + RR_SCALE / 2);
         // VM::VectorScalarMultiply(&temp, &temp, scale);
-        CircleData circle(temp, (RR_SCALE / 2) - RR_PADDING, reactorMaterial[i].element);
+        CircleData circle(temp, (RR_SCALE / 2) - RR_ATOM_PADDING, reactorMaterial[i].element);
         if (updatedParticles->size() <= i) {
             updatedParticles->push_back(circle);
         } else {
             (*updatedParticles)[i].position = temp;
-            (*updatedParticles)[i].radius = (RR_SCALE / 2) - RR_PADDING;
+            (*updatedParticles)[i].radius = (RR_SCALE / 2) - RR_ATOM_PADDING;
             (*updatedParticles)[i].colourID = reactorMaterial[i].element;
         }
     }
@@ -245,7 +261,7 @@ void fluidEngine::LinkNeutronsToMain(
     std::vector<CircleData>* updatedParticles)
 {
 
-    // Render sand
+    // Clear neutrons
     if (refreshNeutrons) {
         updatedParticles->clear();
         refreshNeutrons = false;
@@ -255,13 +271,43 @@ void fluidEngine::LinkNeutronsToMain(
         // Rounding
         VM::Vector2 temp = *new VM::Vector2((neutrons[i].position.x * RR_SCALE) + RR_SCALE / 2, (neutrons[i].position.y * RR_SCALE) + RR_SCALE / 2);
         // VM::VectorScalarMultiply(&temp, &temp, scale);
-        CircleData circle(temp, (RR_SCALE / 3) - RR_PADDING, -1);
+        CircleData circle(temp, (RR_SCALE / 4), -1);
         if (updatedParticles->size() <= i) {
             updatedParticles->push_back(circle);
         } else {
             (*updatedParticles)[i].position = temp;
-            (*updatedParticles)[i].radius = (RR_SCALE / 3) - RR_PADDING;
+            (*updatedParticles)[i].radius = (RR_SCALE / 4);
             (*updatedParticles)[i].colourID = -1;
+        }
+    }
+}
+
+// Encode water data to render data
+void fluidEngine::LinkReactorWaterToMain(
+    std::vector<RectangleData>* updatedParticles)
+{
+    for (int i = 0; i < reactorWater.size(); i++) {
+        // Rounding
+        VM::Vector2 temp = *new VM::Vector2((reactorWater[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorWater[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        VM::Vector2 size = *new VM::Vector2((RR_SCALE / 2) - RR_WATER_PADDING, (RR_SCALE / 2) - RR_WATER_PADDING);
+        int colour = -1;
+        if (reactorWater[i].temperature < 0) {
+            // Blue
+            colour = 0;
+        } else if (reactorWater[i].temperature > 100) {
+            colour = -1;
+        } else {
+            colour = reactorWater[i].temperature * 2.55;
+        }
+
+        RectangleData rect(temp, size, colour);
+
+        if (updatedParticles->size() <= i) {
+            updatedParticles->push_back(rect);
+        } else {
+            (*updatedParticles)[i].position = temp;
+            (*updatedParticles)[i].size = size;
+            (*updatedParticles)[i].colourID = colour;
         }
     }
 }

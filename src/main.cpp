@@ -16,6 +16,7 @@ Uint32 frameStart;
 int currentTickTime;
 std::vector<CircleData> reactorMaterial;
 std::vector<CircleData> neutrons;
+std::vector<RectangleData> reactorWater;
 
 // Entrypoint
 int main(int argc, char* args[])
@@ -29,21 +30,21 @@ int main(int argc, char* args[])
     fluid->Start(render);
     render->LinkSettings(&fluid->settings);
 
-    // Spawn initial reactor material
+    // Spawn initial reactor
     for (int x = 0; x < NR_SIZE_X; x++) {
         for (int y = 0; y < NR_SIZE_Y; y++) {
+            fluid->AddWater(x, y);
             if (RandomRange(0, 1.0) < NR_ENRICHMENT) {
                 fluid->AddReactorMaterial(x, y, 1);
             } else {
                 fluid->AddReactorMaterial(x, y, 0);
-                // fluid->AddNeutron(x, y);
             }
-            // fluid->AddReactorMaterial(x, y, 1);
         }
     }
 
     render->LinkReactorMaterials(&reactorMaterial);
     render->LinkNeutrons(&neutrons);
+    render->LinkReactorWater(&reactorWater);
 
     // Tick loop
     while (render->Running()) {
@@ -54,6 +55,7 @@ int main(int argc, char* args[])
         std::thread fluidThread(&fluidEngine::Update, fluid);
         fluid->LinkReactorMaterialToMain(&reactorMaterial);
         fluid->LinkNeutronsToMain(&neutrons);
+        fluid->LinkReactorWaterToMain(&reactorWater);
         if (render->AddNetron() > 0) {
             for (int i = 0; i < render->AddNetron(); i++) {
                 fluid->AddNeutron(RandomRange(0, NR_SIZE_X), RandomRange(0, NR_SIZE_Y));

@@ -29,6 +29,7 @@ ImGuiIO io;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 std::vector<CircleData>* reactorMaterialRef;
 std::vector<CircleData>* neturonRef;
+std::vector<RectangleData>* waterRef;
 
 void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 {
@@ -37,6 +38,10 @@ void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 void renderEngine::LinkNeutrons(std::vector<CircleData>* newPos)
 {
     neturonRef = newPos;
+}
+void renderEngine::LinkReactorWater(std::vector<RectangleData>* newPos)
+{
+    waterRef = newPos;
 }
 
 // Start engine
@@ -122,6 +127,8 @@ void renderEngine::Update()
     ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
     ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
+    ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
+    ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
     // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
     // ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
 
@@ -181,18 +188,31 @@ void renderEngine::Update()
         ImVec2(p.x, p.y), ImVec2(p.x + (NR_SIZE_X * RR_SCALE), p.y + (NR_SIZE_Y * RR_SCALE)),
         IM_COL32(255, 255, 255, 255));
 
+    // Draw Reactor Water
+    for (int i = 0; i < waterRef->size(); i++) {
+        auto col = IM_COL32((*waterRef)[i].colourID, 0, 255 - (*waterRef)[i].colourID, 255);
+        if ((*waterRef)[i].colourID == -1) {
+            col = IM_COL32(0, 0, 0, 0);
+        }
+
+        ImGui::GetWindowDrawList()->AddRectFilled(
+            ImVec2(p.x + ((*waterRef)[i].position.x - ((*waterRef)[i].size.x / 1)), p.y + ((*waterRef)[i].position.y - ((*waterRef)[i].size.y / 1))), ImVec2(p.x + ((*waterRef)[i].position.x + ((*waterRef)[i].size.x / 1)), p.y + ((*waterRef)[i].position.y + ((*waterRef)[i].size.y / 1))),
+            col);
+    }
+    // Draw Reactor Materials
     for (int i = 0; i < reactorMaterialRef->size(); i++) {
         auto col = IM_COL32(0, 0, 0, 255);
         if ((*reactorMaterialRef)[i].colourID == 0) {
             col = IM_COL32(200, 200, 200, 255);
         } else if ((*reactorMaterialRef)[i].colourID == 1) {
-            col = IM_COL32(100, 100, 255, 255);
+            col = IM_COL32(100, 200, 100, 255);
         }
         ImGui::GetWindowDrawList()->AddCircleFilled(
             ImVec2(p.x + (*reactorMaterialRef)[i].position.x,
                 p.y + (*reactorMaterialRef)[i].position.y),
             (*reactorMaterialRef)[i].radius, col, 0);
     }
+    // Draw Neutrons
     for (int i = 0; i < neturonRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
         ImGui::GetWindowDrawList()->AddCircleFilled(

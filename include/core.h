@@ -9,6 +9,8 @@
 #define NR_SIZE_X 20
 #define NR_SIZE_Y 20
 #define NR_ENRICHMENT 0.1
+#define NR_WATER_RANGE 1
 // Reactor Renderer
 #define RR_SCALE 30
-#define RR_PADDING 3
+#define RR_ATOM_PADDING 3
+#define RR_WATER_PADDING 0

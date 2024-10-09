@@ -30,6 +30,8 @@ struct ReactorSettings {
     float fissionNeutronSpeed = 200;
     float decayChance = 0.001;
     float regenerateChance = 0.001;
+    float heatDissipate = 10;
+    float heatTransfer = 10;
 };
 
 struct CircleData {
@@ -44,6 +46,19 @@ struct CircleData {
     };
 };
 
+struct RectangleData {
+    VM::Vector2 position = VM::Vector2(0, 0);
+    VM::Vector2 size = VM::Vector2(0, 0);
+
+    int colourID = 0;
+    RectangleData(VM::Vector2 pos, VM::Vector2 scale, int colour = 0)
+    {
+        position = pos;
+        size = scale;
+        colourID = colour;
+    };
+};
+
 class renderEngine {
 public:
     renderEngine();
@@ -54,6 +69,7 @@ public:
     void UpdateImage(float* colours);
     void LinkReactorMaterials(std::vector<CircleData>* newPos);
     void LinkNeutrons(std::vector<CircleData>* newPos);
+    void LinkReactorWater(std::vector<RectangleData>* newPos);
     void FloodImage(Colour3 col);
     void Update();
     void Render();
