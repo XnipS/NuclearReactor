@@ -32,6 +32,7 @@ struct ReactorSettings {
     float regenerateChance = 0.001;
     float heatDissipate = 10;
     float heatTransfer = 10;
+    float waterAbsorptionChance = 0.001;
 };
 
 struct CircleData {

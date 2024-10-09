@@ -127,6 +127,7 @@ void renderEngine::Update()
     ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
     ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
+    ImGui::SliderFloat("Neutron Absorption Chance", &settings->waterAbsorptionChance, 0, 0.5);
     ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
     // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);

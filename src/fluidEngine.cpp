@@ -130,6 +130,11 @@ void fluidEngine::HeatTransferUpdate(water* particle)
 
         if (dist < NR_WATER_RANGE) {
             particle->temperature += settings.heatTransfer * NE_DELTATIME;
+            if (particle->temperature < 100) {
+                if (RandomRange(0.0, 1.0) < settings.waterAbsorptionChance * NE_DELTATIME) {
+                    DestroyNeutron(neutrons[j].id);
+                }
+            }
         } else {
             continue;
         }
