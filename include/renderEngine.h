@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -29,10 +30,10 @@ struct ReactorSettings {
     int fissionNeutronCount = 3;
     float fissionNeutronSpeed = 200;
     float decayChance = 0.001;
-    float regenerateChance = 0.001;
+    float regenerateChance = 0.01;
     float xenonDecayChance = 0.001;
-    float heatDissipate = 10;
-    float heatTransfer = 10;
+    float heatDissipate = 5;
+    float heatTransfer = 15;
     float waterAbsorptionChance = 0.001;
 };
 
@@ -100,5 +101,5 @@ inline VM::Vector2 RandomUnitVector()
 {
     double theta = RandomRange(0, 2 * M_PI);
 
-    return *new VM::Vector2(cos(theta), sin(theta));
+    return VM::Vector2(cos(theta), sin(theta));
 };

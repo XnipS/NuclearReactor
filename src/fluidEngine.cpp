@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <new>
 #include <ostream>
@@ -23,25 +24,25 @@ int neutronCurrentID = 0;
 // Spawn new reactor material
 void fluidEngine::AddReactorMaterial(int x, int y, int element)
 {
-    atom mat = *new atom(x, y, element);
+    atom mat = atom(x, y, element);
     reactorMaterial.push_back(mat);
 };
 
 // Spawn new water
 void fluidEngine::AddWater(int x, int y)
 {
-    water mat = *new water(x, y);
+    water mat = water(x, y);
     reactorWater.push_back(mat);
 };
 
 // Spawn new neutron
 void fluidEngine::AddNeutron(int x, int y)
 {
-    neutron mat = *new neutron(x, y, neutronCurrentID);
+    neutron mat = neutron(x, y, neutronCurrentID);
     neutronCurrentID++;
     // mat.acceleration = *new VM::Vector2(RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE), RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE));
     VM::Vector2 acc = RandomUnitVector();
-    mat.acceleration = *new VM::Vector2(acc.x * settings.fissionNeutronSpeed, acc.y * settings.fissionNeutronSpeed);
+    mat.acceleration = VM::Vector2(acc.x * settings.fissionNeutronSpeed, acc.y * settings.fissionNeutronSpeed);
     neutrons.push_back(mat);
 };
 
@@ -61,7 +62,7 @@ void fluidEngine::CollisionUpdate(neutron* particle)
     for (int j = 0; j < reactorMaterial.size(); j++) {
         // if (*particle != sand[j]) {
         double dist;
-        VectorDistance(&particle->position, new VM::Vector2(reactorMaterial[j].position.x, reactorMaterial[j].position.y), &dist);
+        VectorDistanceInt(&reactorMaterial[j].position, &particle->position, &dist);
         const double min_dist = 0.5;
         if (dist < min_dist) {
             if (reactorMaterial[j].element == 1) {
@@ -71,6 +72,7 @@ void fluidEngine::CollisionUpdate(neutron* particle)
                 for (int i = 0; i < settings.fissionNeutronCount; i++) {
                     AddNeutron(reactorMaterial[j].position.x, reactorMaterial[j].position.y);
                 }
+                isPlayingSound = true;
                 break;
             } else if (reactorMaterial[j].element == 2) {
                 // Is Xe-135 -> Can Stabilise!
@@ -135,7 +137,7 @@ void fluidEngine::HeatTransferUpdate(water* particle)
     }
     for (int j = 0; j < neutrons.size(); j++) {
         double dist;
-        VectorDistance(new VM::Vector2(particle->position.x, particle->position.y), &neutrons[j].position, &dist);
+        VectorDistanceInt(&particle->position, &neutrons[j].position, &dist);
 
         if (dist < NR_WATER_RANGE) {
             particle->temperature += settings.heatTransfer * NE_DELTATIME;
@@ -251,13 +253,13 @@ void fluidEngine::LinkReactorMaterialToMain(
     std::vector<CircleData>* updatedParticles)
 {
     // Render sand
-    if (renderer->ClearNeutrons()) {
-        updatedParticles->clear();
-    }
+    /*     if (renderer->ClearNeutrons()) {
+            updatedParticles->clear();
+        } */
 
     for (int i = 0; i < reactorMaterial.size(); i++) {
         // Rounding
-        VM::Vector2 temp = *new VM::Vector2((reactorMaterial[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorMaterial[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        VM::Vector2 temp((reactorMaterial[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorMaterial[i].position.y * RR_SCALE) + RR_SCALE / 2);
         // VM::VectorScalarMultiply(&temp, &temp, scale);
         CircleData circle(temp, (RR_SCALE / 2) - RR_ATOM_PADDING, reactorMaterial[i].element);
         if (updatedParticles->size() <= i) {
@@ -283,7 +285,7 @@ void fluidEngine::LinkNeutronsToMain(
 
     for (int i = 0; i < neutrons.size(); i++) {
         // Rounding
-        VM::Vector2 temp = *new VM::Vector2((neutrons[i].position.x * RR_SCALE) + RR_SCALE / 2, (neutrons[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        VM::Vector2 temp((neutrons[i].position.x * RR_SCALE) + RR_SCALE / 2, (neutrons[i].position.y * RR_SCALE) + RR_SCALE / 2);
         // VM::VectorScalarMultiply(&temp, &temp, scale);
         CircleData circle(temp, (RR_SCALE / 4), -1);
         if (updatedParticles->size() <= i) {
@@ -302,8 +304,8 @@ void fluidEngine::LinkReactorWaterToMain(
 {
     for (int i = 0; i < reactorWater.size(); i++) {
         // Rounding
-        VM::Vector2 temp = *new VM::Vector2((reactorWater[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorWater[i].position.y * RR_SCALE) + RR_SCALE / 2);
-        VM::Vector2 size = *new VM::Vector2((RR_SCALE / 2) - RR_WATER_PADDING, (RR_SCALE / 2) - RR_WATER_PADDING);
+        VM::Vector2 temp((reactorWater[i].position.x * RR_SCALE) + RR_SCALE / 2, (reactorWater[i].position.y * RR_SCALE) + RR_SCALE / 2);
+        VM::Vector2 size((RR_SCALE / 2) - RR_WATER_PADDING, (RR_SCALE / 2) - RR_WATER_PADDING);
         int colour = -1;
         if (reactorWater[i].temperature < 0) {
             // Blue

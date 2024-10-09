@@ -8,24 +8,32 @@
 #include "../include/core.h"
 #include "../include/fluidEngine.h"
 #include "../include/renderEngine.h"
+#include "../include/soundMixer.h"
+#include "SDL_keyboard.h"
+#include "SDL_scancode.h"
 
 renderEngine* render = nullptr;
 fluidEngine* fluid = nullptr;
+soundMixer* sound = nullptr;
 
 Uint32 frameStart;
 int currentTickTime;
 std::vector<CircleData> reactorMaterial;
 std::vector<CircleData> neutrons;
 std::vector<RectangleData> reactorWater;
-
 // Entrypoint
 int main(int argc, char* args[])
 {
     // Engines
     render = new renderEngine();
     fluid = new fluidEngine();
+    sound = new soundMixer();
 
     // Start
+    sound->InitMixer();
+    int snd = sound->LoadSound("sound.wav");
+    int geigerSnd = sound->LoadSound("geiger.wav");
+    sound->PlaySound(snd);
     render->Initialise("Nuclear Reactor Simulator", 1280, 720);
     fluid->Start(render);
     render->LinkSettings(&fluid->settings);
@@ -69,6 +77,10 @@ int main(int argc, char* args[])
         render->Render();
 
         fluidThread.join();
+        if (fluid->isPlayingSound) {
+            sound->PlaySound(geigerSnd);
+            fluid->isPlayingSound = false;
+        }
 
         // Check for delays
         currentTickTime = SDL_GetTicks() - frameStart;
@@ -81,6 +93,7 @@ int main(int argc, char* args[])
         }
     }
     // Clean
+    sound->QuitMixer();
     render->Clean();
     return 0;
 }
