@@ -20,6 +20,7 @@ renderEngine* renderer;
 VM::Vector2 startingVelocity(0.0001, 0.0001);
 bool refreshNeutrons = false;
 int neutronCurrentID = 0;
+int statUpdate = 0;
 
 // Spawn new reactor material
 void fluidEngine::AddReactorMaterial(int x, int y, int element)
@@ -40,10 +41,16 @@ void fluidEngine::AddNeutron(int x, int y)
 {
     neutron mat = neutron(x, y, neutronCurrentID);
     neutronCurrentID++;
-    // mat.acceleration = *new VM::Vector2(RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE), RandomRange(-NR_NEUTRON_KE, NR_NEUTRON_KE));
     VM::Vector2 acc = RandomUnitVector();
     mat.acceleration = VM::Vector2(acc.x * settings.fissionNeutronSpeed, acc.y * settings.fissionNeutronSpeed);
     neutrons.push_back(mat);
+};
+
+// Spawn new control rod
+void fluidEngine::AddControlRod(int x, int h)
+{
+    controlRod mat = controlRod(x, h);
+    controlRods.push_back(mat);
 };
 
 // Initialise fluid engine
@@ -59,6 +66,7 @@ void fluidEngine::Start(renderEngine* ren)
 // Do collision check on all particles
 void fluidEngine::CollisionUpdate(neutron* particle)
 {
+    // Check for reactor material collisions
     for (int j = 0; j < reactorMaterial.size(); j++) {
         // if (*particle != sand[j]) {
         double dist;
@@ -85,8 +93,19 @@ void fluidEngine::CollisionUpdate(neutron* particle)
             }
         }
     }
+    // Check for control rod collisions
+    for (int j = 0; j < controlRods.size(); j++) {
+        // Check x
+        if (particle->position.x + 0.5 > (controlRods[j].xPosition - 0.5) && particle->position.x + 0.5 < (controlRods[j].xPosition + 0.5)) {
+            // Check y
+            if (particle->position.y + 0.5 < ((controlRods[j].height / 100) * NR_SIZE_Y)) {
+                DestroyNeutron(particle->id);
+                break;
+            }
+        }
+    }
 }
-
+// Apply physics to neutrons
 void fluidEngine::PositionUpdate(neutron* particle)
 {
     VM::Vector2 velocity(0, 0);
@@ -103,7 +122,7 @@ void fluidEngine::PositionUpdate(neutron* particle)
     VM::VectorSum(&particle->position, &particle->position,
         &velocity); // x = x0 + v
 };
-
+// Inert atoms radiate random neutrons
 void fluidEngine::DecayUpdate(atom* particle)
 {
     if (particle->element == 0) {
@@ -117,7 +136,7 @@ void fluidEngine::DecayUpdate(atom* particle)
         }
     }
 };
-
+// Inert atoms can regenerate into enriched U-235
 void fluidEngine::RegenUpdate(atom* particle)
 {
     if (particle->element == 0) {
@@ -127,7 +146,7 @@ void fluidEngine::RegenUpdate(atom* particle)
         }
     }
 };
-
+// Heat water if neutron is touching
 void fluidEngine::HeatTransferUpdate(water* particle)
 {
     if (particle->temperature > 0) {
@@ -151,7 +170,7 @@ void fluidEngine::HeatTransferUpdate(water* particle)
         }
     }
 };
-
+// Remove neutrons out of containment
 void fluidEngine::ContainerUpdate(neutron* particle)
 {
     bool escaped = false;
@@ -173,13 +192,13 @@ void fluidEngine::ContainerUpdate(neutron* particle)
         DestroyNeutron(particle->id);
     }
 };
-
+// Clear all neutrons
 void fluidEngine::ClearNeutrons()
 {
     neutrons.clear();
     refreshNeutrons = true;
 };
-
+// Destroy specific neutron
 void fluidEngine::DestroyNeutron(int id)
 {
     for (int i = 0; i < neutrons.size(); i++) {
@@ -189,6 +208,12 @@ void fluidEngine::DestroyNeutron(int id)
         }
     }
     refreshNeutrons = true;
+};
+
+// Set control rod height
+void fluidEngine::SetControlRodHeight(int id, int h)
+{
+    controlRods[id].height = h;
 };
 
 // Fluid engine tick
@@ -239,13 +264,14 @@ void fluidEngine::Update()
         HeatTransferUpdate(&reactorWater[i]);
     }
 
-    // Update current sand stats
-    /*     ParticleStats p;
-        p.pos_x = sand[0].position.x;
-        p.pos_y = sand[0].position.y;
-        p.vel_x = sand[0].acceleration.x;
-        p.vel_y = sand[0].acceleration.y;
-        settings.particle.AddParticle(&p); */
+    // Update current statistics
+    if (statUpdate <= 0) {
+
+        settings.stats.AddData(neutrons.size());
+        statUpdate = NE_TARGET_TICKRATE;
+    } else {
+        statUpdate--;
+    }
 }
 
 // Encode reactor data to render data
@@ -316,6 +342,27 @@ void fluidEngine::LinkReactorWaterToMain(
             colour = reactorWater[i].temperature * 2.55;
         }
 
+        RectangleData rect(temp, size, colour);
+
+        if (updatedParticles->size() <= i) {
+            updatedParticles->push_back(rect);
+        } else {
+            (*updatedParticles)[i].position = temp;
+            (*updatedParticles)[i].size = size;
+            (*updatedParticles)[i].colourID = colour;
+        }
+    }
+}
+
+// Encode water data to render data
+void fluidEngine::LinkReactorRodToMain(
+    std::vector<RectangleData>* updatedParticles)
+{
+    for (int i = 0; i < controlRods.size(); i++) {
+        // Rounding
+        VM::Vector2 temp((controlRods[i].xPosition * RR_SCALE), (((controlRods[i].height / 100) * RR_SCALE * NR_SIZE_Y) / 2));
+        VM::Vector2 size((RR_SCALE / 2), ((controlRods[i].height / 100) * RR_SCALE * NR_SIZE_Y));
+        int colour = -2;
         RectangleData rect(temp, size, colour);
 
         if (updatedParticles->size() <= i) {

@@ -54,6 +54,18 @@ public:
     };
 };
 
+class controlRod {
+public:
+    float xPosition;
+    float height;
+
+    controlRod(float x, float insertion)
+    {
+        xPosition = x;
+        height = insertion;
+    }
+};
+
 class fluidEngine {
 public:
     fluidEngine();
@@ -61,7 +73,10 @@ public:
     void Start(renderEngine* ren);
     void Update();
     void AddReactorMaterial(int x, int y, int element);
+    void AddControlRod(int x, int h);
+    void SetControlRodHeight(int id, int h);
     void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
+    void LinkReactorRodToMain(std::vector<RectangleData>* newPositions);
     bool isPlayingSound = false;
     void AddNeutron(int x, int y);
     void AddWater(int x, int y);
@@ -69,7 +84,7 @@ public:
     void ClearNeutrons();
     void LinkNeutronsToMain(std::vector<CircleData>* newPositions);
     void LinkReactorWaterToMain(std::vector<RectangleData>* newPositions);
-    // int SandCount() { return sand.size(); }
+    int NeutronCount() { return neutrons.size(); }
     ReactorSettings settings;
 
 private:
@@ -87,4 +102,5 @@ private:
     std::vector<atom> reactorMaterial;
     std::vector<neutron> neutrons;
     std::vector<water> reactorWater;
+    std::vector<controlRod> controlRods;
 };

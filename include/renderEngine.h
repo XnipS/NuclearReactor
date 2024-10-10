@@ -6,24 +6,35 @@
 
 #include "VectorMath.h"
 
-struct Colour3 {
-    float r = 0;
-    float b = 0;
-    float g = 0;
-    Colour3(float red, float green, float blue)
-    {
-        r = red;
-        b = blue;
-        g = green;
-    }
-};
-
 struct ParticleStats {
     double pos_x;
     double pos_y;
 
     double vel_x;
     double vel_y;
+};
+
+class ReactorStatistics {
+private:
+    std::vector<int> m_reactivity;
+    int m_max = 60;
+
+public:
+    std::vector<int> GetStats() const { return m_reactivity; }
+    int GetMax() const { return m_max; }
+    inline void AddData(int stat)
+    {
+        m_reactivity.push_back(stat);
+        if (m_reactivity.size() > m_max) {
+            m_reactivity.erase(m_reactivity.begin());
+        }
+    };
+    inline void ZeroGraph()
+    {
+        for (int i = 0; i < m_max; i++) {
+            AddData(0);
+        }
+    };
 };
 
 struct ReactorSettings {
@@ -35,6 +46,13 @@ struct ReactorSettings {
     float heatDissipate = 5;
     float heatTransfer = 15;
     float waterAbsorptionChance = 0.001;
+    ReactorStatistics stats;
+
+    int rodHeight_1 = 50;
+    int rodHeight_2 = 50;
+    int rodHeight_3 = 50;
+    int rodHeight_4 = 50;
+    int rodHeight_5 = 50;
 };
 
 struct CircleData {
@@ -69,11 +87,10 @@ public:
 
     void Initialise(const char* title, int w, int h);
     void LinkSettings(ReactorSettings* set) { settings = set; };
-    void UpdateImage(float* colours);
     void LinkReactorMaterials(std::vector<CircleData>* newPos);
     void LinkNeutrons(std::vector<CircleData>* newPos);
     void LinkReactorWater(std::vector<RectangleData>* newPos);
-    void FloodImage(Colour3 col);
+    void LinkReactorRod(std::vector<RectangleData>* newPos);
     void Update();
     void Render();
     void Clean();

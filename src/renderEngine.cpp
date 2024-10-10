@@ -30,6 +30,8 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 std::vector<CircleData>* reactorMaterialRef;
 std::vector<CircleData>* neturonRef;
 std::vector<RectangleData>* waterRef;
+std::vector<RectangleData>* rodRef;
+bool global;
 
 void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 {
@@ -42,6 +44,10 @@ void renderEngine::LinkNeutrons(std::vector<CircleData>* newPos)
 void renderEngine::LinkReactorWater(std::vector<RectangleData>* newPos)
 {
     waterRef = newPos;
+}
+void renderEngine::LinkReactorRod(std::vector<RectangleData>* newPos)
+{
+    rodRef = newPos;
 }
 
 // Start engine
@@ -133,16 +139,37 @@ void renderEngine::Update()
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
     // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
     // ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
-
     ImGui::End();
 
-    // Sand Summoner
+    // Controlrod Manager
+    ImGui::Begin("Control Rod Manager", NULL,
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Checkbox("Global", &global);
+    ImGui::BeginDisabled(!global);
+    ImGui::SliderInt("Rod Insertion", &settings->rodHeight_1, 1, 100);
+    ImGui::EndDisabled();
+    ImGui::Separator();
+    ImGui::BeginDisabled(global);
+    ImGui::SliderInt("Rod 1 Insertion", &settings->rodHeight_1, 1, 100);
+    ImGui::SliderInt("Rod 2 Insertion", &settings->rodHeight_2, 1, 100);
+    ImGui::SliderInt("Rod 3 Insertion", &settings->rodHeight_3, 1, 100);
+    ImGui::SliderInt("Rod 4 Insertion", &settings->rodHeight_4, 1, 100);
+    ImGui::SliderInt("Rod 5 Insertion", &settings->rodHeight_5, 1, 100);
+    ImGui::EndDisabled();
+    if (global) {
+        settings->rodHeight_2 = settings->rodHeight_1;
+        settings->rodHeight_3 = settings->rodHeight_1;
+        settings->rodHeight_4 = settings->rodHeight_1;
+        settings->rodHeight_5 = settings->rodHeight_1;
+    }
+    ImGui::End();
+
+    // Neutron Summoner
     ImGui::Begin("Neutron Summoner", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
-    // ImGui::InputDouble("Drag Coeff. (-)", &settings->dragCoefficient);
-    // ImGui::InputDouble("Mass (kg)", &settings->mass);
-    // ImGui::InputDouble("Radius (m)", &settings->radius);
-    ImGui::Text("Total: %i", val_totalSand);
+    // ImGui::Text("Total: %i", val_totalSand);
+
     addNeutrons = 0;
     ImGui::SameLine();
     if (ImGui::Button("Add 1x")) {
@@ -192,7 +219,7 @@ void renderEngine::Update()
 
     // Draw Reactor Water
     for (int i = 0; i < waterRef->size(); i++) {
-        auto col = IM_COL32((*waterRef)[i].colourID, 0, 255 - (*waterRef)[i].colourID, 255);
+        auto col = IM_COL32((*waterRef)[i].colourID, 20, 255 - (*waterRef)[i].colourID, 255);
         if ((*waterRef)[i].colourID == -1) {
             col = IM_COL32(0, 0, 0, 0);
         }
@@ -224,6 +251,14 @@ void renderEngine::Update()
                 p.y + (*neturonRef)[i].position.y),
             (*neturonRef)[i].radius, col, 0);
     }
+    // Draw Reactor rods
+    for (int i = 0; i < rodRef->size(); i++) {
+        auto col = IM_COL32(50, 50, 50, 255);
+
+        ImGui::GetWindowDrawList()->AddRectFilled(
+            ImVec2(p.x + ((*rodRef)[i].position.x - ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y - ((*rodRef)[i].size.y / 2))), ImVec2(p.x + ((*rodRef)[i].position.x + ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y + ((*rodRef)[i].size.y / 2))),
+            col);
+    }
 
     // static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;
 
@@ -240,38 +275,23 @@ void renderEngine::Update()
     ImGui::End();
 
     // Data Output
-    /*     ImGui::Begin("Data", NULL);
-        if (ImPlot::BeginPlot("Red Particle Data")) {
-            // float time[settings->particle.GetMax()];
-            static std::vector<float> time(settings->particle.GetMax());
-            for (int i = 0; i < settings->particle.GetMax(); i++) {
-                time[i] = i;
-            }
-            static std::vector<float> data(settings->particle.GetMax());
-            for (int i = 0; i < settings->particle.GetMax(); i++) {
-                data[i] = settings->particle.GetStats()[i].vel_y;
-            }
-            static std::vector<float> data2(settings->particle.GetMax());
-            for (int i = 0; i < settings->particle.GetMax(); i++) {
-                data2[i] = settings->particle.GetStats()[i].vel_x;
-            }
-            static std::vector<float> data3(settings->particle.GetMax());
-            for (int i = 0; i < settings->particle.GetMax(); i++) {
-                data3[i] = settings->particle.GetStats()[i].pos_y;
-            }
-            static std::vector<float> data4(settings->particle.GetMax());
-            for (int i = 0; i < settings->particle.GetMax(); i++) {
-                data4[i] = settings->particle.GetStats()[i].pos_x;
-            }
-            ImPlot::PlotLine("Acceleration Y", &time[0], &data[0],
-                settings->particle.GetMax());
-            ImPlot::PlotLine("Acceleration X", &time[0], &data2[0],
-                settings->particle.GetMax());
-            ImPlot::PlotLine("Pos Y", &time[0], &data3[0], settings->particle.GetMax());
-            ImPlot::PlotLine("Pos X", &time[0], &data4[0], settings->particle.GetMax());
-            ImPlot::EndPlot();
+    ImGui::Begin("Data", NULL);
+    if (ImPlot::BeginPlot("Data Output")) {
+        // float time[settings->particle.GetMax()];
+        static std::vector<float> time(settings->stats.GetMax());
+        for (int i = 0; i < settings->stats.GetMax(); i++) {
+            time[i] = i;
         }
-        ImGui::End(); */
+        static std::vector<float> data(settings->stats.GetMax());
+        for (int i = 0; i < settings->stats.GetMax(); i++) {
+            data[i] = settings->stats.GetStats()[i];
+        }
+
+        ImPlot::PlotLine("Reactivity", &time[0], &data[0],
+            settings->stats.GetMax());
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
 }
 
 // Render

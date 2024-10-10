@@ -21,6 +21,7 @@ int currentTickTime;
 std::vector<CircleData> reactorMaterial;
 std::vector<CircleData> neutrons;
 std::vector<RectangleData> reactorWater;
+std::vector<RectangleData> reactorRod;
 // Entrypoint
 int main(int argc, char* args[])
 {
@@ -34,10 +35,11 @@ int main(int argc, char* args[])
     int snd = sound->LoadSound("sound.wav");
     int geigerSnd = sound->LoadSound("geiger.wav");
     sound->PlaySound(snd);
-    render->Initialise("Nuclear Reactor Simulator", 1280, 720);
+    // Old size 1280 * 720
+    render->Initialise("Nuclear Reactor Simulator", 1280 * 1.3, 720 * 1.3);
     fluid->Start(render);
     render->LinkSettings(&fluid->settings);
-
+    fluid->settings.stats.ZeroGraph();
     // Spawn initial reactor
     for (int x = 0; x < NR_SIZE_X; x++) {
         for (int y = 0; y < NR_SIZE_Y; y++) {
@@ -49,10 +51,21 @@ int main(int argc, char* args[])
             }
         }
     }
+    // Spawn rods
+    fluid->AddControlRod(4, 50);
+    fluid->AddControlRod(8, 100); // Static
+    fluid->AddControlRod(12, 50);
+    fluid->AddControlRod(16, 100); // Static
+    fluid->AddControlRod(20, 50);
+    fluid->AddControlRod(24, 100); // Static
+    fluid->AddControlRod(28, 50);
+    fluid->AddControlRod(32, 100); // Static
+    fluid->AddControlRod(36, 50);
 
     render->LinkReactorMaterials(&reactorMaterial);
     render->LinkNeutrons(&neutrons);
     render->LinkReactorWater(&reactorWater);
+    render->LinkReactorRod(&reactorRod);
 
     // Tick loop
     while (render->Running()) {
@@ -64,6 +77,7 @@ int main(int argc, char* args[])
         fluid->LinkReactorMaterialToMain(&reactorMaterial);
         fluid->LinkNeutronsToMain(&neutrons);
         fluid->LinkReactorWaterToMain(&reactorWater);
+        fluid->LinkReactorRodToMain(&reactorRod);
         if (render->AddNetron() > 0) {
             for (int i = 0; i < render->AddNetron(); i++) {
                 fluid->AddNeutron(RandomRange(0, NR_SIZE_X), RandomRange(0, NR_SIZE_Y));
@@ -72,7 +86,13 @@ int main(int argc, char* args[])
         if (render->ClearNeutrons()) {
             fluid->ClearNeutrons();
         }
-        // render->val_totalSand = fluid->SandCount();
+
+        fluid->SetControlRodHeight(0, fluid->settings.rodHeight_1);
+        fluid->SetControlRodHeight(2, fluid->settings.rodHeight_2);
+        fluid->SetControlRodHeight(4, fluid->settings.rodHeight_3);
+        fluid->SetControlRodHeight(6, fluid->settings.rodHeight_4);
+        fluid->SetControlRodHeight(8, fluid->settings.rodHeight_5);
+
         render->Update();
         render->Render();
 
