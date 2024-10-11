@@ -3,10 +3,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
-#include <new>
-#include <ostream>
-#include <sstream>
 #include <vector>
 
 #include "../include/core.h"
@@ -20,7 +16,7 @@ renderEngine* renderer;
 VM::Vector2 startingVelocity(0.0001, 0.0001);
 bool refreshNeutrons = false;
 int neutronCurrentID = 0;
-int statUpdate = 0;
+int statUpdate = NE_TARGET_TICKRATE;
 
 // Spawn new reactor material
 void fluidEngine::AddReactorMaterial(int x, int y, int element)
@@ -60,15 +56,23 @@ void fluidEngine::Start(renderEngine* ren)
     renderer = ren;
 };
 
-// Keep/collide in/with container
-// void fluidEngine::Reflect(double* input) { *input *= -(1.0 - settings.dampen); }
+// Count xenon atoms in reactor
+int fluidEngine::GetXenonCount()
+{
+    int sum = 0;
+    for (int i = 0; i < reactorMaterial.size(); i++) {
+        if (reactorMaterial[i].element == 2) {
+            sum++;
+        }
+    }
+    return sum;
+}
 
 // Do collision check on all particles
 void fluidEngine::CollisionUpdate(neutron* particle)
 {
     // Check for reactor material collisions
     for (int j = 0; j < reactorMaterial.size(); j++) {
-        // if (*particle != sand[j]) {
         double dist;
         VectorDistanceInt(&reactorMaterial[j].position, &particle->position, &dist);
         const double min_dist = 0.5;
@@ -77,6 +81,7 @@ void fluidEngine::CollisionUpdate(neutron* particle)
                 // Is U-235 -> Can Fission!
                 reactorMaterial[j].element = 0;
                 DestroyNeutron(particle->id);
+                RegenInert();
                 for (int i = 0; i < settings.fissionNeutronCount; i++) {
                     AddNeutron(reactorMaterial[j].position.x, reactorMaterial[j].position.y);
                 }
@@ -105,6 +110,7 @@ void fluidEngine::CollisionUpdate(neutron* particle)
         }
     }
 }
+
 // Apply physics to neutrons
 void fluidEngine::PositionUpdate(neutron* particle)
 {
@@ -122,6 +128,7 @@ void fluidEngine::PositionUpdate(neutron* particle)
     VM::VectorSum(&particle->position, &particle->position,
         &velocity); // x = x0 + v
 };
+
 // Inert atoms radiate random neutrons
 void fluidEngine::DecayUpdate(atom* particle)
 {
@@ -136,7 +143,8 @@ void fluidEngine::DecayUpdate(atom* particle)
         }
     }
 };
-// Inert atoms can regenerate into enriched U-235
+
+// Inert atoms can regenerate into enriched U-235 // DEPRECATED
 void fluidEngine::RegenUpdate(atom* particle)
 {
     if (particle->element == 0) {
@@ -146,6 +154,20 @@ void fluidEngine::RegenUpdate(atom* particle)
         }
     }
 };
+
+// Regen random inert atom
+void fluidEngine::RegenInert()
+{
+    bool regenerated = false;
+    while (!regenerated) {
+        int test = RandomRangeInt(0, reactorMaterial.size());
+        if (reactorMaterial[test].element == 0) {
+            reactorMaterial[test].element = 1;
+            regenerated = true;
+        }
+    }
+};
+
 // Heat water if neutron is touching
 void fluidEngine::HeatTransferUpdate(water* particle)
 {
@@ -170,6 +192,7 @@ void fluidEngine::HeatTransferUpdate(water* particle)
         }
     }
 };
+
 // Remove neutrons out of containment
 void fluidEngine::ContainerUpdate(neutron* particle)
 {
@@ -192,12 +215,14 @@ void fluidEngine::ContainerUpdate(neutron* particle)
         DestroyNeutron(particle->id);
     }
 };
+
 // Clear all neutrons
 void fluidEngine::ClearNeutrons()
 {
     neutrons.clear();
     refreshNeutrons = true;
 };
+
 // Destroy specific neutron
 void fluidEngine::DestroyNeutron(int id)
 {
@@ -216,40 +241,21 @@ void fluidEngine::SetControlRodHeight(int id, int h)
     controlRods[id].height = h;
 };
 
+// Calculate average water temperature in reactor
+float fluidEngine::AverageReactorTemperature()
+{
+    float avg = 0;
+    for (int i = 0; i < reactorWater.size(); i++) {
+
+        avg += (reactorWater[i].temperature + NR_WATER_TEMP_OFFSET);
+    }
+
+    return (avg / reactorWater.size());
+}
+
 // Fluid engine tick
 void fluidEngine::Update()
 {
-
-    // Calculate approximate total kinetic energy
-    /*     float energy = 0;
-        for (int t = 0; t < sand.size(); t++) {
-            double magnitude;
-            VectorMagnitude(&sand[t].position_old, &magnitude);
-            energy += 0.5 * magnitude * magnitude;
-        }
-        if (renderer->currentDebugInfo.size() >= 2) {
-            std::ostringstream ss;
-            ss << "Current Energy: ";
-            ss << std::to_string(energy);
-            ss << " J";
-            renderer->currentDebugInfo[1] = ss.str();
-
-            double starting;
-            VectorMagnitude(&startingVelocity, &starting);
-
-            starting = (0.5 * starting * starting) * SandCount();
-
-            std::ostringstream sss;
-            sss << "Starting Energy: ";
-            sss << std::to_string(starting);
-            sss << " J";
-            renderer->currentDebugInfo[0] = sss.str();
-
-        } else {
-            renderer->currentDebugInfo.push_back("INCOMING!");
-            renderer->currentDebugInfo.push_back("INCOMING!");
-        } */
-
     // Physics tick
     for (int i = 0; i < neutrons.size(); i++) {
         CollisionUpdate(&neutrons[i]);
@@ -258,7 +264,7 @@ void fluidEngine::Update()
     }
     for (int i = 0; i < reactorMaterial.size(); i++) {
         DecayUpdate(&reactorMaterial[i]);
-        RegenUpdate(&reactorMaterial[i]);
+        // RegenUpdate(&reactorMaterial[i]); // DEPRECATED
     }
     for (int i = 0; i < reactorWater.size(); i++) {
         HeatTransferUpdate(&reactorWater[i]);
@@ -267,7 +273,9 @@ void fluidEngine::Update()
     // Update current statistics
     if (statUpdate <= 0) {
 
-        settings.stats.AddData(neutrons.size());
+        settings.stats.AddXenonData(GetXenonCount());
+        settings.stats.AddReactionData(neutrons.size());
+        settings.stats.AddTempData(AverageReactorTemperature());
         statUpdate = NE_TARGET_TICKRATE;
     } else {
         statUpdate--;

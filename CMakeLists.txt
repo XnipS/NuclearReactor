@@ -40,13 +40,13 @@ target_link_libraries(imgui SDL2)
 target_include_directories(imgui PUBLIC SDL2 SDL2main)
 # BUILD implot
 add_library(implot STATIC ${IMPLOT_PATH})
-# BUILD FluidisedBed Lib
-add_library(FluidisedBed SHARED
+# BUILD ReactorSim Lib
+add_library(NIP-Engine SHARED
 ${SOURCE_FILES}
 ${HEADER_FILES}
 )
-target_include_directories(FluidisedBed PRIVATE imgui ${SDL2_INCLUDE_DIRS} ${VM_PATH})
+target_include_directories(NIP-Engine PRIVATE imgui ${SDL2_INCLUDE_DIRS} ${VM_PATH})
 # BUILD Main Simulator Executable
-add_executable(Simulator src/main.cpp)
-target_include_directories(Simulator PRIVATE ${SDL2_INCLUDE_DIRS} ${VM_PATH})
-target_link_libraries(Simulator PUBLIC SDL2 FluidisedBed imgui OpenGL implot SDL2_mixer)
+add_executable(NuclearReactorSimulator src/main.cpp)
+target_include_directories(NuclearReactorSimulator PRIVATE ${SDL2_INCLUDE_DIRS} ${VM_PATH})
+target_link_libraries(NuclearReactorSimulator PUBLIC SDL2 NIP-Engine imgui OpenGL implot SDL2_mixer)

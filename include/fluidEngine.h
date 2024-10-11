@@ -68,22 +68,27 @@ public:
 
 class fluidEngine {
 public:
+    // Standard
     fluidEngine();
     ~fluidEngine();
     void Start(renderEngine* ren);
     void Update();
+    // Reactor Alterations
     void AddReactorMaterial(int x, int y, int element);
     void AddControlRod(int x, int h);
     void SetControlRodHeight(int id, int h);
-    void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
-    void LinkReactorRodToMain(std::vector<RectangleData>* newPositions);
-    bool isPlayingSound = false;
     void AddNeutron(int x, int y);
     void AddWater(int x, int y);
     void DestroyNeutron(int id);
     void ClearNeutrons();
+    // Engine -> Renderer Linkage
+    void LinkReactorMaterialToMain(std::vector<CircleData>* newPositions);
+    void LinkReactorRodToMain(std::vector<RectangleData>* newPositions);
     void LinkNeutronsToMain(std::vector<CircleData>* newPositions);
     void LinkReactorWaterToMain(std::vector<RectangleData>* newPositions);
+    // Engine -> Sound Linkage
+    bool isPlayingSound = false;
+    // Engine -> UI Linkage
     int NeutronCount() { return neutrons.size(); }
     ReactorSettings settings;
 
@@ -95,10 +100,16 @@ private:
     // Atom (Reactor Material) Updates
     void DecayUpdate(atom* particle);
     void RegenUpdate(atom* particle);
+    void RegenInert();
     // Water Updates
     void HeatTransferUpdate(water* particle);
+    // UI Calculations
+    float AverageReactorTemperature();
+    int GetXenonCount();
 
-    void Reflect(double* input);
+    void Reflect(double* input); // TODO
+
+    // Reactor
     std::vector<atom> reactorMaterial;
     std::vector<neutron> neutrons;
     std::vector<water> reactorWater;

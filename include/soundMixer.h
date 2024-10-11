@@ -1,3 +1,6 @@
+#include <SDL_mixer.h>
+
+#include <cstdio>
 
 class soundMixer {
 public:
@@ -5,12 +8,12 @@ public:
     ~soundMixer();
     int LoadSound(const char* filename);
 
-    void SetVolume(int v) ;
+    void SetVolume(int v);
 
-    int PlaySound(int s) ;
+    int PlaySound(int s);
 
-    int InitMixer() ;
-    int QuitMixer() ;
+    int InitMixer();
+    void QuitMixer();
 
 private:
     int volume;

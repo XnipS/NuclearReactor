@@ -27,12 +27,21 @@ SDL_Window* window;
 SDL_GLContext gl_context;
 ImGuiIO io;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+// Draw references
 std::vector<CircleData>* reactorMaterialRef;
 std::vector<CircleData>* neturonRef;
 std::vector<RectangleData>* waterRef;
 std::vector<RectangleData>* rodRef;
-bool global;
 
+// Simple control rod settings
+bool global = true;
+bool automode = false;
+int automode_goal = 40;
+int automode_maxheight = 30;
+float automode_speed = 5;
+
+// Linking render data
 void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
 {
     reactorMaterialRef = newPos;
@@ -112,23 +121,11 @@ void renderEngine::Update()
     ImGui::Separator();
     ImGui::Text(NE_VERSION);
     ImGui::Separator();
-    /*     if (ImGui::BeginMenu("Options")) {
-            ImGui::Checkbox("Use normal gravity", &settings->useNormalGravity);
-            ImGui::EndMenu();
-        } */
-    ImGui::Separator();
     ImGui::EndMainMenuBar();
 
     // Toolbox
     ImGui::Begin("Toolbox", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
-    // ImGui::SliderFloat("Gravity (m/s/s)", &settings->gravity, 0, 10);
-    // ImGui::SliderInt("Collision Solver (-)", &settings->collisionCalcCount, 0,
-    //     20);
-    // ImGui::BeginDisabled(true);
-    // ImGui::SliderFloat("Dampen (%)", &settings->dampen, 0, 1);
-    // ImGui::SliderFloat("Heat", &settings->heat, 0, 1);
-    // ImGui::EndDisabled();
     ImGui::SliderInt("Fission Neutron Count", &settings->fissionNeutronCount, 1, 5);
     ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
@@ -137,39 +134,59 @@ void renderEngine::Update()
     ImGui::SliderFloat("Xenon Decay Chance", &settings->xenonDecayChance, 0, 0.5);
     ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
-    // ImGui::SliderFloat("Fluid Power (m/s/s)", &settings->fluid_power, 0, 2);
-    // ImGui::InputDouble("Fluid Density (kg/m3)", &settings->fluidDensity);
     ImGui::End();
 
-    // Controlrod Manager
+    // Control rod Manager
     ImGui::Begin("Control Rod Manager", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
+    ImGui::Checkbox("Automatic", &automode);
     ImGui::Checkbox("Global", &global);
-    ImGui::BeginDisabled(!global);
-    ImGui::SliderInt("Rod Insertion", &settings->rodHeight_1, 1, 100);
+    ImGui::BeginDisabled(!global || automode);
+    ImGui::SliderFloat("Rod Insertion", &settings->rodHeight_1, 1, 100);
     ImGui::EndDisabled();
     ImGui::Separator();
-    ImGui::BeginDisabled(global);
-    ImGui::SliderInt("Rod 1 Insertion", &settings->rodHeight_1, 1, 100);
-    ImGui::SliderInt("Rod 2 Insertion", &settings->rodHeight_2, 1, 100);
-    ImGui::SliderInt("Rod 3 Insertion", &settings->rodHeight_3, 1, 100);
-    ImGui::SliderInt("Rod 4 Insertion", &settings->rodHeight_4, 1, 100);
-    ImGui::SliderInt("Rod 5 Insertion", &settings->rodHeight_5, 1, 100);
+    ImGui::BeginDisabled(global || automode);
+    ImGui::SliderFloat("Rod 1 Insertion", &settings->rodHeight_1, 1, 100);
+    ImGui::SliderFloat("Rod 2 Insertion", &settings->rodHeight_2, 1, 100);
+    ImGui::SliderFloat("Rod 3 Insertion", &settings->rodHeight_3, 1, 100);
+    ImGui::SliderFloat("Rod 4 Insertion", &settings->rodHeight_4, 1, 100);
+    ImGui::SliderFloat("Rod 5 Insertion", &settings->rodHeight_5, 1, 100);
     ImGui::EndDisabled();
+    ImGui::Separator();
+    ImGui::BeginDisabled(!automode);
+    ImGui::SliderInt("Min Rod Height", &automode_maxheight, 0, 50);
+    ImGui::SliderFloat("Rod Speed", &automode_speed, 0, 10);
+    ImGui::SliderInt("Reactivity Goal", &automode_goal, 1, 500);
+    ImGui::EndDisabled();
+    ImGui::End();
+
+    if (automode) {
+        global = true;
+        if (settings->stats.GetReactivityStats()[settings->stats.GetMax() - 1] < automode_goal) {
+
+            settings->rodHeight_1 -= automode_speed * NE_DELTATIME;
+        } else if (settings->stats.GetReactivityStats()[settings->stats.GetMax() - 1] > automode_goal) {
+            settings->rodHeight_1 += automode_speed * NE_DELTATIME;
+        }
+
+        if (settings->rodHeight_1 > 100) {
+            settings->rodHeight_1 = 100;
+        } else if (settings->rodHeight_1 < automode_maxheight) {
+            settings->rodHeight_1 = automode_maxheight;
+        }
+    }
+
     if (global) {
         settings->rodHeight_2 = settings->rodHeight_1;
         settings->rodHeight_3 = settings->rodHeight_1;
         settings->rodHeight_4 = settings->rodHeight_1;
         settings->rodHeight_5 = settings->rodHeight_1;
     }
-    ImGui::End();
 
     // Neutron Summoner
     ImGui::Begin("Neutron Summoner", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
-    // ImGui::Text("Total: %i", val_totalSand);
-
     addNeutrons = 0;
     ImGui::SameLine();
     if (ImGui::Button("Add 1x")) {
@@ -187,30 +204,30 @@ void renderEngine::Update()
     clearAllNeutrons = ImGui::Button("Clear");
     ImGui::End();
 
-    // Top left Overlay
-    if (currentDebugInfo.size() > 0) {
-        ImGui::SetNextWindowBgAlpha(0.35f);
-        const float PAD = 10.0f;
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImVec2 work_pos = viewport->WorkPos;
-        ImVec2 work_size = viewport->WorkSize;
-        ImVec2 window_pos, window_pos_pivot;
-        window_pos.x = (work_pos.x + 10);
-        window_pos.y = (work_pos.y + 10);
-        window_pos_pivot.x = 0.0f;
-        window_pos_pivot.y = 0.0f;
-        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-        ImGui::Begin("Debug", NULL,
-            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
-        ImGui::Text("Debug");
-        for (int i = 0; i < currentDebugInfo.size(); i++) {
-            ImGui::Text("%s", currentDebugInfo[i].c_str());
-        }
-        ImGui::End();
-    }
+    // Top left Overlay //TODO
+    /*  if (currentDebugInfo.size() > 0) {
+         ImGui::SetNextWindowBgAlpha(0.35f);
+         const float PAD = 10.0f;
+         const ImGuiViewport* viewport = ImGui::GetMainViewport();
+         ImVec2 work_pos = viewport->WorkPos;
+         ImVec2 work_size = viewport->WorkSize;
+         ImVec2 window_pos, window_pos_pivot;
+         window_pos.x = (work_pos.x + 10);
+         window_pos.y = (work_pos.y + 10);
+         window_pos_pivot.x = 0.0f;
+         window_pos_pivot.y = 0.0f;
+         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+         ImGui::Begin("Debug", NULL,
+             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
+         ImGui::Text("Debug");
+         for (int i = 0; i < currentDebugInfo.size(); i++) {
+             ImGui::Text("%s", currentDebugInfo[i].c_str());
+         }
+         ImGui::End();
+     } */
 
     // Primary Renderer
-    ImGui::Begin("Primary Renderer", NULL,
+    ImGui::Begin("Nuclear Reactor", NULL,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
     ImVec2 p = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddRectFilled(
@@ -223,11 +240,11 @@ void renderEngine::Update()
         if ((*waterRef)[i].colourID == -1) {
             col = IM_COL32(0, 0, 0, 0);
         }
-
         ImGui::GetWindowDrawList()->AddRectFilled(
             ImVec2(p.x + ((*waterRef)[i].position.x - ((*waterRef)[i].size.x / 1)), p.y + ((*waterRef)[i].position.y - ((*waterRef)[i].size.y / 1))), ImVec2(p.x + ((*waterRef)[i].position.x + ((*waterRef)[i].size.x / 1)), p.y + ((*waterRef)[i].position.y + ((*waterRef)[i].size.y / 1))),
             col);
     }
+
     // Draw Reactor Materials
     for (int i = 0; i < reactorMaterialRef->size(); i++) {
         auto col = IM_COL32(0, 0, 0, 255);
@@ -243,6 +260,7 @@ void renderEngine::Update()
                 p.y + (*reactorMaterialRef)[i].position.y),
             (*reactorMaterialRef)[i].radius, col, 0);
     }
+
     // Draw Neutrons
     for (int i = 0; i < neturonRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
@@ -251,6 +269,7 @@ void renderEngine::Update()
                 p.y + (*neturonRef)[i].position.y),
             (*neturonRef)[i].radius, col, 0);
     }
+
     // Draw Reactor rods
     for (int i = 0; i < rodRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
@@ -259,18 +278,6 @@ void renderEngine::Update()
             ImVec2(p.x + ((*rodRef)[i].position.x - ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y - ((*rodRef)[i].size.y / 2))), ImVec2(p.x + ((*rodRef)[i].position.x + ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y + ((*rodRef)[i].size.y / 2))),
             col);
     }
-
-    // static double scale = ((FB_CONTAINER_OUTPUT - 1) / FB_CONTAINER_SIZE) * FB_IMAGE_SCALE_V2;
-
-    /* for (int i = 0; i < FB_CONTAINER_OUTPUT; i++) {
-        if (!(i % (FB_CONTAINER_OUTPUT / settings->fluid_holes))) {
-            ImGui::GetWindowDrawList()->AddRectFilled(
-                ImVec2(p.x + i * RR_SCALE, p.y + max_size),
-                ImVec2((p.x + i * RR_SCALE) + 5, p.y + max_size - 5),
-                IM_COL32(0, 0, 255, 255));
-        }
-    } */
-
     ImGui::Dummy(ImVec2((NR_SIZE_X * RR_SCALE), (NR_SIZE_Y * RR_SCALE)));
     ImGui::End();
 
@@ -284,10 +291,22 @@ void renderEngine::Update()
         }
         static std::vector<float> data(settings->stats.GetMax());
         for (int i = 0; i < settings->stats.GetMax(); i++) {
-            data[i] = settings->stats.GetStats()[i];
+            data[i] = settings->stats.GetReactivityStats()[i];
+        }
+        static std::vector<float> data1(settings->stats.GetMax());
+        for (int i = 0; i < settings->stats.GetMax(); i++) {
+            data1[i] = settings->stats.GetXenonStats()[i];
+        }
+        static std::vector<float> data2(settings->stats.GetMax());
+        for (int i = 0; i < settings->stats.GetMax(); i++) {
+            data2[i] = settings->stats.GetTempStats()[i];
         }
 
         ImPlot::PlotLine("Reactivity", &time[0], &data[0],
+            settings->stats.GetMax());
+        ImPlot::PlotLine("Xenon", &time[0], &data1[0],
+            settings->stats.GetMax());
+        ImPlot::PlotLine("Average Temperature", &time[0], &data2[0],
             settings->stats.GetMax());
         ImPlot::EndPlot();
     }

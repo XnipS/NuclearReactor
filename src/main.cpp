@@ -9,8 +9,6 @@
 #include "../include/fluidEngine.h"
 #include "../include/renderEngine.h"
 #include "../include/soundMixer.h"
-#include "SDL_keyboard.h"
-#include "SDL_scancode.h"
 
 renderEngine* render = nullptr;
 fluidEngine* fluid = nullptr;
@@ -18,6 +16,7 @@ soundMixer* sound = nullptr;
 
 Uint32 frameStart;
 int currentTickTime;
+
 std::vector<CircleData> reactorMaterial;
 std::vector<CircleData> neutrons;
 std::vector<RectangleData> reactorWater;
@@ -32,14 +31,12 @@ int main(int argc, char* args[])
 
     // Start
     sound->InitMixer();
-    int snd = sound->LoadSound("sound.wav");
     int geigerSnd = sound->LoadSound("geiger.wav");
-    sound->PlaySound(snd);
-    // Old size 1280 * 720
-    render->Initialise("Nuclear Reactor Simulator", 1280 * 1.3, 720 * 1.3);
-    fluid->Start(render);
+    render->Initialise("Nuclear Reactor Simulator", 1280 * 1.3, 720 * 1.3); // Old size 1280 * 720
     render->LinkSettings(&fluid->settings);
+    fluid->Start(render);
     fluid->settings.stats.ZeroGraph();
+
     // Spawn initial reactor
     for (int x = 0; x < NR_SIZE_X; x++) {
         for (int y = 0; y < NR_SIZE_Y; y++) {
@@ -51,6 +48,7 @@ int main(int argc, char* args[])
             }
         }
     }
+
     // Spawn rods
     fluid->AddControlRod(4, 50);
     fluid->AddControlRod(8, 100); // Static
@@ -62,6 +60,7 @@ int main(int argc, char* args[])
     fluid->AddControlRod(32, 100); // Static
     fluid->AddControlRod(36, 50);
 
+    // Create links to renderer
     render->LinkReactorMaterials(&reactorMaterial);
     render->LinkNeutrons(&neutrons);
     render->LinkReactorWater(&reactorWater);
@@ -74,10 +73,12 @@ int main(int argc, char* args[])
 
         // Update & render
         std::thread fluidThread(&fluidEngine::Update, fluid);
+        // Sync with reactor engine
         fluid->LinkReactorMaterialToMain(&reactorMaterial);
         fluid->LinkNeutronsToMain(&neutrons);
         fluid->LinkReactorWaterToMain(&reactorWater);
         fluid->LinkReactorRodToMain(&reactorRod);
+        // Sync user feedback
         if (render->AddNetron() > 0) {
             for (int i = 0; i < render->AddNetron(); i++) {
                 fluid->AddNeutron(RandomRange(0, NR_SIZE_X), RandomRange(0, NR_SIZE_Y));
@@ -86,7 +87,12 @@ int main(int argc, char* args[])
         if (render->ClearNeutrons()) {
             fluid->ClearNeutrons();
         }
+        if (fluid->isPlayingSound) {
+            sound->PlaySound(geigerSnd);
+            fluid->isPlayingSound = false;
+        }
 
+        // Adjust control rods
         fluid->SetControlRodHeight(0, fluid->settings.rodHeight_1);
         fluid->SetControlRodHeight(2, fluid->settings.rodHeight_2);
         fluid->SetControlRodHeight(4, fluid->settings.rodHeight_3);
@@ -97,10 +103,6 @@ int main(int argc, char* args[])
         render->Render();
 
         fluidThread.join();
-        if (fluid->isPlayingSound) {
-            sound->PlaySound(geigerSnd);
-            fluid->isPlayingSound = false;
-        }
 
         // Check for delays
         currentTickTime = SDL_GetTicks() - frameStart;

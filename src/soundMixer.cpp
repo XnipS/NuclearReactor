@@ -1,15 +1,14 @@
 #include "../include/soundMixer.h"
-#include "SDL.h"
-#include <SDL_mixer.h>
-#include <cstddef>
-#include <cstdio>
+#include <SDL.h>
 #include <vector>
 
+// Sounds in memory
 std::vector<Mix_Chunk*> sounds;
 
 soundMixer::soundMixer() {};
 soundMixer::~soundMixer() {};
 
+// Load sound from file (WAVEFORM)
 int soundMixer::LoadSound(const char* filename)
 {
     Mix_Chunk* m = NULL;
@@ -22,11 +21,13 @@ int soundMixer::LoadSound(const char* filename)
     return sounds.size() - 1;
 }
 
+// Set volume
 void soundMixer::SetVolume(int v)
 {
     volume = (MIX_MAX_VOLUME * v) / 100;
 }
 
+// Play sound from memory
 int soundMixer::PlaySound(int s)
 {
     Mix_Volume(-1, volume);
@@ -34,6 +35,7 @@ int soundMixer::PlaySound(int s)
     return 0;
 }
 
+// Initialise sound mixer
 int soundMixer::InitMixer()
 {
     Mix_Init(MIX_INIT_MP3);
@@ -42,10 +44,12 @@ int soundMixer::InitMixer()
         printf("Failed initialise mixer!");
         return -1;
     }
-    SetVolume(80);
+    SetVolume(50);
     return 0;
 }
-int soundMixer::QuitMixer()
+
+// Free mixer
+void soundMixer::QuitMixer()
 {
     for (int i = 0; i < sounds.size(); i++) {
         Mix_FreeChunk(sounds[i]);
