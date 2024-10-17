@@ -8,10 +8,11 @@
 // Nuclear Reactor Structure Config
 #define NR_SIZE_X 40
 #define NR_SIZE_Y 25
-#define NR_ENRICHMENT 0.15
-#define NR_WATER_RANGE 1
+#define NR_ENRICHMENT 0.2
+#define NR_WATER_RANGE 1.5
 #define NR_WATER_TEMP_OFFSET 20
 // Reactor Renderer
 #define RR_SCALE 30
-#define RR_ATOM_PADDING 3
-#define RR_WATER_PADDING 0
+#define RR_ATOM_PADDING 5
+#define RR_WATER_PADDING 0.1
+#define RR_CR_PADDING 1

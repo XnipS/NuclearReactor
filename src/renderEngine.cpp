@@ -37,7 +37,7 @@ std::vector<RectangleData>* rodRef;
 // Simple control rod settings
 bool global = true;
 bool automode = false;
-int automode_goal = 40;
+int automode_goal = 30;
 int automode_maxheight = 30;
 float automode_speed = 5;
 
@@ -129,11 +129,11 @@ void renderEngine::Update()
     ImGui::SliderInt("Fission Neutron Count", &settings->fissionNeutronCount, 1, 5);
     ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
-    ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
     ImGui::SliderFloat("Neutron Absorption Chance", &settings->waterAbsorptionChance, 0, 0.5);
     ImGui::SliderFloat("Xenon Decay Chance", &settings->xenonDecayChance, 0, 0.5);
     ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
+    ImGui::SliderFloat("Water Flow Rate", &settings->waterFlow, 0, 100);
     ImGui::End();
 
     // Control rod Manager
@@ -264,6 +264,9 @@ void renderEngine::Update()
     // Draw Neutrons
     for (int i = 0; i < neturonRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
+        if ((*neturonRef)[i].colourID == 1) {
+            col = IM_COL32(100, 100, 100, 255);
+        }
         ImGui::GetWindowDrawList()->AddCircleFilled(
             ImVec2(p.x + (*neturonRef)[i].position.x,
                 p.y + (*neturonRef)[i].position.y),
@@ -273,7 +276,12 @@ void renderEngine::Update()
     // Draw Reactor rods
     for (int i = 0; i < rodRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
-
+        if ((*rodRef)[i].colourID == 1) {
+            col = IM_COL32(100, 100, 100, 255);
+        }
+        if ((*rodRef)[i].colourID == -1) {
+            col = IM_COL32(200, 200, 200, 255);
+        }
         ImGui::GetWindowDrawList()->AddRectFilled(
             ImVec2(p.x + ((*rodRef)[i].position.x - ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y - ((*rodRef)[i].size.y / 2))), ImVec2(p.x + ((*rodRef)[i].position.x + ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y + ((*rodRef)[i].size.y / 2))),
             col);

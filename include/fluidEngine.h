@@ -13,14 +13,14 @@
 class neutron {
 public:
     VM::Vector2 position = VM::Vector2(0, 0);
-    VM::Vector2 position_old = VM::Vector2(0, 0);
-    VM::Vector2 acceleration = VM::Vector2(0, 0);
+    VM::Vector2 velocity = VM::Vector2(0, 0);
     int id;
-    neutron(double x, double y, int newid)
+    bool fast;
+    neutron(double x, double y, int newid, bool fastNeutron)
     {
         position = VM::Vector2(x, y);
-        position_old = VM::Vector2(x, y);
         id = newid;
+        fast = fastNeutron;
     }
 };
 
@@ -58,11 +58,13 @@ class controlRod {
 public:
     float xPosition;
     float height;
+    bool moderator;
 
-    controlRod(float x, float insertion)
+    controlRod(float x, float insertion, bool mod)
     {
         xPosition = x;
         height = insertion;
+        moderator = mod;
     }
 };
 
@@ -75,9 +77,9 @@ public:
     void Update();
     // Reactor Alterations
     void AddReactorMaterial(int x, int y, int element);
-    void AddControlRod(int x, int h);
+    void AddControlRod(int x, int h, bool moderator);
     void SetControlRodHeight(int id, int h);
-    void AddNeutron(int x, int y);
+    void AddNeutron(int x, int y, bool fast);
     void AddWater(int x, int y);
     void DestroyNeutron(int id);
     void ClearNeutrons();
@@ -106,8 +108,6 @@ private:
     // UI Calculations
     float AverageReactorTemperature();
     int GetXenonCount();
-
-    void Reflect(double* input); // TODO
 
     // Reactor
     std::vector<atom> reactorMaterial;
