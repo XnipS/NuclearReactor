@@ -34,8 +34,10 @@ int main(int argc, char* args[])
     int geigerSnd = sound->LoadSound("geiger.wav");
     render->Initialise("Nuclear Reactor Simulator", 1280 * 1.3, 720 * 1.3); // Old size 1280 * 720
     render->LinkSettings(&fluid->settings);
+    render->Start();
     fluid->Start(render);
     fluid->settings.stats.ZeroGraph();
+    render->neutronCount = &fluid->neutronCount;
 
     // Spawn initial reactor
     for (int x = 0; x < NR_SIZE_X; x++) {

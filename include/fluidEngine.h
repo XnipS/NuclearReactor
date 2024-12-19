@@ -91,7 +91,7 @@ public:
     // Engine -> Sound Linkage
     bool isPlayingSound = false;
     // Engine -> UI Linkage
-    int NeutronCount() { return neutrons.size(); }
+    int neutronCount;
     ReactorSettings settings;
 
 private:

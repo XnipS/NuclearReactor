@@ -75,12 +75,12 @@ struct ReactorSettings {
     int fissionNeutronCount = 3;
     float fissionNeutronSpeed = 3;
     float fissionFastNeutronSpeed = 6;
-    float decayChance = 0.01;
+    float decayChance = 0.002;
     float waterAbsorptionChance = 0.02;
     // Reactor material settings
     float xenonDecayChance = 0.003;
     // Heat transfer settings
-    float heatDissipate = 10;
+    float heatDissipate = 0;
     float waterFlow = 30;
     float heatTransfer = 15;
     // Graph data
@@ -126,6 +126,7 @@ public:
     ~renderEngine();
 
     void Initialise(const char* title, int w, int h);
+    void Start();
     void Update();
     void Render();
     void Clean();
@@ -143,6 +144,9 @@ public:
     bool ClearNeutrons() { return clearAllNeutrons; };
 
     std::vector<std::string> currentDebugInfo; // TODO
+
+    int* neutronCount = nullptr;
+
 private:
     ReactorSettings* settings;
     int tick = 0;

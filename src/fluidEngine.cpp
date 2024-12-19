@@ -164,6 +164,7 @@ void fluidEngine::DecayUpdate(atom* particle)
     if (particle->element == 0) {
         // Inert -> Release radiation
         if (RandomRange(0.0, 1.0) < settings.decayChance * NE_DELTATIME) {
+            // if (RandomRange(0.0, 1.0) < 0.0064 * settings.decayChance * neutronCount * NE_DELTATIME) {
             AddNeutron(particle->position.x, particle->position.y, true);
         }
         // Inert -> Can decay to Xenon
@@ -295,6 +296,7 @@ void fluidEngine::Update()
     for (int i = 0; i < reactorWater.size(); i++) {
         HeatTransferUpdate(&reactorWater[i]);
     }
+    neutronCount = neutrons.size();
 
     // Update current statistics
     if (statUpdate <= 0) {

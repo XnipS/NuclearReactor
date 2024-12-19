@@ -15,4 +15,4 @@
 #define RR_SCALE 30
 #define RR_ATOM_PADDING 5
 #define RR_WATER_PADDING 0.1
-#define RR_CR_PADDING 1
+#define RR_CR_PADDING 4
