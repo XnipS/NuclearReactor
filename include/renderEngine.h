@@ -73,23 +73,24 @@ public:
 struct ReactorSettings {
     // Neutron settings
     int fissionNeutronCount = 3;
-    float fissionNeutronSpeed = 200;
-    float decayChance = 0.01;
+    float fissionNeutronSpeed = 3;
+    float fissionFastNeutronSpeed = 6;
+    float decayChance = 0.002;
     float waterAbsorptionChance = 0.02;
     // Reactor material settings
-    float regenerateChance = 0.02; // DEPRECATED
-    float xenonDecayChance = 0.005;
+    float xenonDecayChance = 0.003;
     // Heat transfer settings
-    float heatDissipate = 10;
-    float heatTransfer = 10;
+    float heatDissipate = 0;
+    float waterFlow = 30;
+    float heatTransfer = 15;
     // Graph data
     ReactorStatistics stats;
     // Rods
-    float rodHeight_1 = 50;
-    float rodHeight_2 = 50;
-    float rodHeight_3 = 50;
-    float rodHeight_4 = 50;
-    float rodHeight_5 = 50;
+    float rodHeight_1 = 100;
+    float rodHeight_2 = 100;
+    float rodHeight_3 = 100;
+    float rodHeight_4 = 100;
+    float rodHeight_5 = 100;
 };
 
 // Draw circle
@@ -125,6 +126,7 @@ public:
     ~renderEngine();
 
     void Initialise(const char* title, int w, int h);
+    void Start();
     void Update();
     void Render();
     void Clean();
@@ -142,6 +144,9 @@ public:
     bool ClearNeutrons() { return clearAllNeutrons; };
 
     std::vector<std::string> currentDebugInfo; // TODO
+
+    int* neutronCount = nullptr;
+
 private:
     ReactorSettings* settings;
     int tick = 0;

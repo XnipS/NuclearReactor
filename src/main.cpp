@@ -34,8 +34,10 @@ int main(int argc, char* args[])
     int geigerSnd = sound->LoadSound("geiger.wav");
     render->Initialise("Nuclear Reactor Simulator", 1280 * 1.3, 720 * 1.3); // Old size 1280 * 720
     render->LinkSettings(&fluid->settings);
+    render->Start();
     fluid->Start(render);
     fluid->settings.stats.ZeroGraph();
+    render->neutronCount = &fluid->neutronCount;
 
     // Spawn initial reactor
     for (int x = 0; x < NR_SIZE_X; x++) {
@@ -50,15 +52,17 @@ int main(int argc, char* args[])
     }
 
     // Spawn rods
-    fluid->AddControlRod(4, 50);
-    fluid->AddControlRod(8, 100); // Static
-    fluid->AddControlRod(12, 50);
-    fluid->AddControlRod(16, 100); // Static
-    fluid->AddControlRod(20, 50);
-    fluid->AddControlRod(24, 100); // Static
-    fluid->AddControlRod(28, 50);
-    fluid->AddControlRod(32, 100); // Static
-    fluid->AddControlRod(36, 50);
+    fluid->AddControlRod(0, 0, true); // Static
+    fluid->AddControlRod(4, 100, false);
+    fluid->AddControlRod(8, 0, true); // Static
+    fluid->AddControlRod(12, 100, false);
+    fluid->AddControlRod(16, 0, true); // Static
+    fluid->AddControlRod(20, 100, false);
+    fluid->AddControlRod(24, 0, true); // Static
+    fluid->AddControlRod(28, 100, false);
+    fluid->AddControlRod(32, 0, true); // Static
+    fluid->AddControlRod(36, 100, false);
+    fluid->AddControlRod(40, 0, true); // Static
 
     // Create links to renderer
     render->LinkReactorMaterials(&reactorMaterial);
@@ -81,7 +85,7 @@ int main(int argc, char* args[])
         // Sync user feedback
         if (render->AddNetron() > 0) {
             for (int i = 0; i < render->AddNetron(); i++) {
-                fluid->AddNeutron(RandomRange(0, NR_SIZE_X), RandomRange(0, NR_SIZE_Y));
+                fluid->AddNeutron(RandomRange(0, NR_SIZE_X), RandomRange(0, NR_SIZE_Y), true);
             }
         }
         if (render->ClearNeutrons()) {
@@ -93,11 +97,11 @@ int main(int argc, char* args[])
         }
 
         // Adjust control rods
-        fluid->SetControlRodHeight(0, fluid->settings.rodHeight_1);
-        fluid->SetControlRodHeight(2, fluid->settings.rodHeight_2);
-        fluid->SetControlRodHeight(4, fluid->settings.rodHeight_3);
-        fluid->SetControlRodHeight(6, fluid->settings.rodHeight_4);
-        fluid->SetControlRodHeight(8, fluid->settings.rodHeight_5);
+        fluid->SetControlRodHeight(1, fluid->settings.rodHeight_1);
+        fluid->SetControlRodHeight(3, fluid->settings.rodHeight_2);
+        fluid->SetControlRodHeight(5, fluid->settings.rodHeight_3);
+        fluid->SetControlRodHeight(7, fluid->settings.rodHeight_4);
+        fluid->SetControlRodHeight(9, fluid->settings.rodHeight_5);
 
         render->Update();
         render->Render();

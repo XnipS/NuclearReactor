@@ -1,4 +1,5 @@
 #include "../include/renderEngine.h"
+#include "SDL_stdinc.h"
 
 #include <vector>
 
@@ -19,6 +20,7 @@
 #include "../depend/imgui/backends/imgui_impl_sdl2.h"
 #include "../depend/imgui/imgui.h"
 #include "../depend/implot/implot.h"
+#include "../include/PIDController.h"
 #include "../include/core.h"
 
 renderEngine::renderEngine() { }
@@ -37,9 +39,16 @@ std::vector<RectangleData>* rodRef;
 // Simple control rod settings
 bool global = true;
 bool automode = false;
-int automode_goal = 40;
+int automode_goal = 30;
 int automode_maxheight = 30;
 float automode_speed = 5;
+
+// Advanced control rod settings
+bool useController = false;
+PID controller;
+float controller_Kp = 0.5;
+float controller_Ki = 0.1;
+float controller_Kd = 1;
 
 // Linking render data
 void renderEngine::LinkReactorMaterials(std::vector<CircleData>* newPos)
@@ -68,7 +77,7 @@ void renderEngine::Initialise(const char* title, int w, int h)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     // Create window with flags
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL);
+    Uint32 window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL) | SDL_WINDOW_RESIZABLE;
     window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, w, h, window_flags);
 
@@ -92,6 +101,13 @@ void renderEngine::Initialise(const char* title, int w, int h)
 
     // Setup Done
     isRunning = true;
+}
+
+// Start (AFter Init, Before Update)
+void renderEngine::Start()
+{
+    // PID
+    controller = PID(controller_Kp, controller_Ki, controller_Kd, automode_goal, 0, 100);
 }
 
 // Tick renderengine
@@ -129,11 +145,11 @@ void renderEngine::Update()
     ImGui::SliderInt("Fission Neutron Count", &settings->fissionNeutronCount, 1, 5);
     ImGui::SliderFloat("Fission Neutron Speed", &settings->fissionNeutronSpeed, 0, 1000);
     ImGui::SliderFloat("Decay Chance", &settings->decayChance, 0, 0.5);
-    ImGui::SliderFloat("Regenerate Chance", &settings->regenerateChance, 0, 0.5);
     ImGui::SliderFloat("Neutron Absorption Chance", &settings->waterAbsorptionChance, 0, 0.5);
     ImGui::SliderFloat("Xenon Decay Chance", &settings->xenonDecayChance, 0, 0.5);
     ImGui::SliderFloat("Dissipate Speed", &settings->heatDissipate, 0, 100);
     ImGui::SliderFloat("Heat Transfer Speed", &settings->heatTransfer, 0, 100);
+    ImGui::SliderFloat("Water Flow Rate", &settings->waterFlow, 0, 100);
     ImGui::End();
 
     // Control rod Manager
@@ -142,6 +158,7 @@ void renderEngine::Update()
 
     ImGui::Checkbox("Automatic", &automode);
     ImGui::Checkbox("Global", &global);
+    ImGui::Checkbox("Use PID", &useController);
     ImGui::BeginDisabled(!global || automode);
     ImGui::SliderFloat("Rod Insertion", &settings->rodHeight_1, 1, 100);
     ImGui::EndDisabled();
@@ -159,24 +176,36 @@ void renderEngine::Update()
     ImGui::SliderFloat("Rod Speed", &automode_speed, 0, 10);
     ImGui::SliderInt("Reactivity Goal", &automode_goal, 1, 500);
     ImGui::EndDisabled();
+    ImGui::Separator();
+    ImGui::BeginDisabled(!useController);
+    ImGui::SliderFloat("P", &controller_Kp, -3, 3);
+    ImGui::SliderFloat("I", &controller_Ki, -3, 3);
+    ImGui::SliderFloat("D", &controller_Kd, -3, 3);
+    ImGui::EndDisabled();
     ImGui::End();
 
     if (automode) {
         global = true;
-        if (settings->stats.GetReactivityStats()[settings->stats.GetMax() - 1] < automode_goal) {
+        if (useController) {
+            float signal = controller.Calculate(*neutronCount, NE_DELTATIME, controller_Kp, controller_Ki, controller_Kd);
+            settings->rodHeight_1 -= signal * NE_DELTATIME;
+        } else {
+            // Use basic automode
+            if (*neutronCount < automode_goal) {
 
-            settings->rodHeight_1 -= automode_speed * NE_DELTATIME;
-        } else if (settings->stats.GetReactivityStats()[settings->stats.GetMax() - 1] > automode_goal) {
-            settings->rodHeight_1 += automode_speed * NE_DELTATIME;
-        }
+                settings->rodHeight_1 -= automode_speed * NE_DELTATIME;
+            } else if (*neutronCount > automode_goal) {
+                settings->rodHeight_1 += automode_speed * NE_DELTATIME;
+            }
 
-        if (settings->rodHeight_1 > 100) {
-            settings->rodHeight_1 = 100;
-        } else if (settings->rodHeight_1 < automode_maxheight) {
-            settings->rodHeight_1 = automode_maxheight;
+            if (settings->rodHeight_1 > 100) {
+                settings->rodHeight_1 = 100;
+            } else if (settings->rodHeight_1 < automode_maxheight) {
+                settings->rodHeight_1 = automode_maxheight;
+            }
         }
     }
-
+    // Set all rods
     if (global) {
         settings->rodHeight_2 = settings->rodHeight_1;
         settings->rodHeight_3 = settings->rodHeight_1;
@@ -264,6 +293,9 @@ void renderEngine::Update()
     // Draw Neutrons
     for (int i = 0; i < neturonRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
+        if ((*neturonRef)[i].colourID == 1) {
+            col = IM_COL32(100, 100, 100, 255);
+        }
         ImGui::GetWindowDrawList()->AddCircleFilled(
             ImVec2(p.x + (*neturonRef)[i].position.x,
                 p.y + (*neturonRef)[i].position.y),
@@ -273,7 +305,12 @@ void renderEngine::Update()
     // Draw Reactor rods
     for (int i = 0; i < rodRef->size(); i++) {
         auto col = IM_COL32(50, 50, 50, 255);
-
+        if ((*rodRef)[i].colourID == 1) {
+            col = IM_COL32(100, 100, 100, 255);
+        }
+        if ((*rodRef)[i].colourID == -1) {
+            col = IM_COL32(200, 200, 200, 255);
+        }
         ImGui::GetWindowDrawList()->AddRectFilled(
             ImVec2(p.x + ((*rodRef)[i].position.x - ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y - ((*rodRef)[i].size.y / 2))), ImVec2(p.x + ((*rodRef)[i].position.x + ((*rodRef)[i].size.x / 2)), p.y + ((*rodRef)[i].position.y + ((*rodRef)[i].size.y / 2))),
             col);
